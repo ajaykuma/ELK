@@ -1,10 +1,28 @@
+Refer : 'Cluster_SetupES.txt' SETUP SECTION >
+         from > ELK\cluster_n_components_setup\ELK_Cluster_Settings\ES_Work\Versions_6_or_7.8\ESCluster_Work1
+
 #Setting up a ES on a single node, however 3 instances running on different ports
 
 --create a directory 'cluster-configs' in location, say /usr/local
+
+--for example
+[hdu@ch1 ~]$ sudo mkdir /usr/local/cluster-configs
+[hdu@ch1 ~]$ sudo chown -R hdu:hdu /usr/local/cluster-configs
+
 --copy the configs from <gitpath/cluster-configs' into /usr/local/cluster-configs
+--for example
+[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node1/ /usr/local/cluster-configs/
+[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node2/ /usr/local/cluster-configs/
+[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node3/ /usr/local/cluster-configs/
+
 --notice the changes in elasticsearch.yml in Node1, Node2 & Node3
 --notice that jvm.options and log4j exists for each node along with elasticsearch.yml
---copy sysctl.conf and limits.conf from <gitpath/cluster_n_components_setup/Cluster_Config_Settings1/ESCluster_Work1/
+--copy sysctl.conf and limits.conf from 
+  https://github.com/ajaykuma/ELK/tree/master/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1
+
+[hdu@ch1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1/limits.conf .
+[hdu@ch1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1/sysctl.conf .
+[hdu@ch1 ~]$ ls
 
 Start instances of Elasticsearch
 ES_PATH_CONF=/usr/local/cluster-configs/Node1 elasticsearch

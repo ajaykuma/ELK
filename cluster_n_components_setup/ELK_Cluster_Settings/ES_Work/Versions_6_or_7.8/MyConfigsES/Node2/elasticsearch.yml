@@ -24,7 +24,7 @@ cluster.name: mycluster
 #
 #node.name: node-1
 #updated v1
-node.name: data1
+node.name: node2
 #
 # Add custom attributes to the node:
 #
@@ -58,7 +58,7 @@ bootstrap.memory_lock: true
 #
 #network.host: 192.168.0.1
 #updated v1
-network.host: c2
+network.host: ch2
 #
 # Set a custom port for HTTP:
 #
@@ -76,7 +76,7 @@ node.data: true
 # Pass an initial list of hosts to perform discovery when new node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-discovery.zen.ping.unicast.hosts: ["c1","c2"]
+discovery.zen.ping.unicast.hosts: ["ch1","ch2"]
 #
 # Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
 #
