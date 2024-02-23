@@ -98,12 +98,27 @@ POST /ecommerce2/_bulk
 {"update" : {"_id" : "1310"}}
 {"doc" : {"price" : 102}}
 
-GET ecommerce2/_search
+POST /ecommerce2/_bulk
+{"delete" : {"_id" : "1005"}}
+{"index": {}}
+{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+POST /ecommerce2/_bulk
+{"delete" : {"_id" : "1005"}}
+{"index": {"_id" : "1111"}}
+{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+
+GET ecommerce2/_count
 {
-    "query": {
+       "query": {
         "match_all": {}
     }
 }
+
+GET ecommerce2/_doc/1111
+
+GET ecommerce2/_count
 
 #check from discover kibana if quantity was updated
 
