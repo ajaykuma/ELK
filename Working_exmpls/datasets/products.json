@@ -1,0 +1,8 @@
+{ "index" : { "_index" : "products", "_id" : "1" } }
+{ "title" : "Nike Running Shoes" }
+{ "index" : { "_index" : "products", "_id" : "2" } }
+{ "title" : "Adidas Basketball Shoes" }
+{ "index" : { "_index" : "products"} }
+{ "title" : "Nike Running Shoes" }
+{ "index" : { "_index" : "products"} }
+{ "title" : "Adidas Basketball Shoes" }
