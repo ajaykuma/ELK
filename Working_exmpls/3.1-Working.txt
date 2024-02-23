@@ -1,0 +1,148 @@
+
+#Performing operations in Batches
+Doing an explain:
+GET ecommerce2/_search
+{
+    "explain": true, 
+    "query": {
+        "match_all": {}
+    }
+}
+
+#Using _bulk API expects a single line with action ie create,update or delete
+#It uses '/n' for new lines
+
+POST /ecommerce2/_bulk
+{"index": {"_id":"1002"}}
+{"name": "why ES is Awesome","price":"100.00","description":"This book is all about ELK!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["ES","searching"]}
+{"index": {"_id":"1003"}}
+{"name": "cashewnuts","price":"110.00","description":"spicy cashewnuts","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1005"}}
+{"name": "why elasticsearch is Good","price":"200.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+PUT /ecommerce2/_bulk
+{"index": {"_id":"711"}}
+{"name": "Stock market","price":"1000.00","description":"This book is all trading","status":"active","quantity":10,"categories":[{"name":"Finance"}],"tags":["stock","trading"]}
+{"index": {"_id":"170"}}
+{"name": "almonds","price":"500.00","description":"spicy almonds","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1370"}}
+{"name": "Trading market","price":"1010.00","description":"This book is all trading","status":"active","quantity":12,"categories":[{"name":"Finance"}],"tags":["markets","trading"]}
+{"index": {"_id":"1297"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"173"}}
+{"name": "why elasticsearch is Good - new edition","price":"250.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"18"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"309"}}
+{"name": "mix dryfruits","price":"500.00","description":"spicy nuts","status":"active","quantity":150,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1339"}}
+{"name": "why logstash is needed","price":"101.00","description":"Logstash for data processing pipeline","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elk","programming"]}
+{"index": {"_id":"1310"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+
+PUT /ecommerce2/_bulk
+{"index": {"_id":"711"}}
+{"name": "Stock market","price":"1000.00","description":"This book is all trading","status":"active","quantity":10,"categories":[{"name":"Finance"}],"tags":["stock","trading"]}
+{"index": {"_id":"170"}}
+{"name": "almonds","price":"500.00","description":"spicy almonds","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1370"}}
+{"name": "Trading market","price":"1010.00","description":"This book is all trading","status":"active","quantity":12,"categories":[{"name":"Finance"}],"tags":["markets","trading"]}
+{"index": {"_id":"1297"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"173"}}
+{"name": "why elasticsearch is Good - new edition","price":"250.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"18"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"309"}}
+{"name": "mix dryfruits","price":"500.00","description":"spicy nuts","status":"active","quantity":150,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1339"}}
+{"name": "why logstash is needed","price":"101.00","description":"Logstash for data processing pipeline","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elk","programming"]}
+{"index": {"_id":"1310"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+
+POST /ecommerce2/_bulk
+{"index": {"_id":"1002"}}
+{"name": "why ES is Awesome","price":"900.00","description":"This book is all about ES- new edition","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["ES","programming"]}
+{"index": {"_id":"1003"}}
+{"name": "cashewnuts","price":"150.00","description":"spicy cashewnuts","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1005"}}
+{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+
+GET /_cat/indices/ecommerce*?v
+
+GET ecommerce2/_search
+{
+    "query": {
+        "match_all": {}
+    }
+}
+
+GET ecommerce2/_search
+{
+    "query": {
+        "match_all": {}
+    },
+    "explain" : True
+}
+
+GET /_cat/indices/ecommerce*?v
+
+GET /_cluster/health/ecommerce?level=shards
+GET /_cluster/health/ecommerce2?level=shards
+
+#more operations using bulk
+POST /ecommerce2/_bulk
+{"delete" : {"_id" : "711"}}
+{"update" : {"_id" : "1310"}}
+{"doc" : {"price" : 102}}
+
+GET ecommerce2/_search
+{
+    "query": {
+        "match_all": {}
+    }
+}
+
+#check from discover kibana if quantity was updated
+
+#Notes
+#All actions are performed in sequence,so if any action fails, rest will still be processed.
+POST /ecommerce2/_bulk
+POST /_bulk
+
+example:
+POST /_bulk
+{"update" : {"_id" : "1310", "_index" : "ecommerce2"}}
+{"doc" : {"price" : 103}}
+
+GET /_cat/indices?v
+
+GET ecommerce2/_doc/1002
+
+GET /_cluster/health/ecommerce2?level=shards
+
+#using routing to shard data on any other field(other than _id)
+PUT ecommerce2/_doc/101?routing=title&refresh=true
+{
+  "title": "This is a document"
+}
+
+PUT ecommerce2/_doc/102?routing=title&refresh=true
+{
+  "title": "This is a document"
+}
+
+PUT ecommerce2/_doc/103?routing=title&refresh=true
+{
+  "title": "This is a document"
+}
+
+#retrieving data using routing
+GET ecommerce2/_doc/101?routing=title
+
+#check shard allocation and if documents increase in one particular shard
+GET /_cat/shards/ecommerce2?v
+
