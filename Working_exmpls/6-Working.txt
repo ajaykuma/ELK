@@ -1,3 +1,14 @@
+#Using analyzers:
+An analyzer  — whether built-in or custom — is just a package which contains three lower-level 
+building blocks: character filters, tokenizers, and token filters.
+
+Character filters are used to preprocess the stream of characters before it is passed to the tokenizer.
+A character filter receives the original text as a stream of characters and can transform the stream by adding, 
+removing, or changing characters. For instance, a character filter could be used 
+to convert Hindu-Arabic numerals (٠‎١٢٣٤٥٦٧٨‎٩‎) into their Arabic-Latin equivalents (0123456789)
+
+--more on this later..
+
 PUT /newdata
 {
      "mappings": {
@@ -184,4 +195,165 @@ POST german_example/_bulk
 {"name": "warum elast","price":"100.00","description":"Verarbeitung der PROTOKOLLE und Übermittlung an ES","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
 {"index": {"_id":"3"}}
 {"name": "ES ist toll","price":"100.00","description":"Dieses Buch ist ein Buch, in dem sich alles um Elasticsearch drehth!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming","SEARCHING INdexes"]}
+
+-----------------
+#Using arabic analyzer
+PUT /arabic_example
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "arabic_stop": {
+          "type":       "stop",
+          "stopwords":  "_arabic_" 
+        },
+        "arabic_keywords": {
+          "type":       "keyword_marker",
+          "keywords":   ["مثال"] 
+        },
+        "arabic_stemmer": {
+          "type":       "stemmer",
+          "language":   "arabic"
+        }
+      },
+      "analyzer": {
+        "rebuilt_arabic": {
+          "tokenizer":  "standard",
+          "filter": [
+            "lowercase",
+            "decimal_digit",
+            "arabic_stop",
+            "arabic_normalization",
+            "arabic_keywords",
+            "arabic_stemmer"
+          ]
+        }
+      }
+    }
+  }
+}
+
+##
+If you do not intend to exclude words from being stemmed 
+(the equivalent of the stem_exclusion parameter above), then you should remove the keyword_marker 
+token filter from the custom analyzer configuration.
+
+GET arabic_example/_analyze
+{"analyzer": "rebuilt_arabic",
+ "text": "۱۲۳٤٥ مرحبا وكيف حالك"}
+ 
+ POST arabic_example/_bulk
+{"index": {"_id":"11"}}
+{"name": "٦۷٥٥٤٤٦","price":"100.00","description":"لما and new data ذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"11"}}
+{"name": "٦۷٥٥٤٤٦","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+
+
+--Mapping character filter
+
+GET /_analyze
+{
+  "tokenizer": "keyword",
+  "char_filter": [
+    {
+      "type": "mapping",
+      "mappings": [
+        "٠ => 0",
+        "١ => 1",
+        "٢ => 2",
+        "٣ => 3",
+        "٤ => 4",
+        "٥ => 5",
+        "٦ => 6",
+        "٧ => 7",
+        "٨ => 8",
+        "٩ => 9"
+      ]
+    }
+  ],
+  "text": "My license plate is ٢٥٠١٥"
+}
+
+PUT /arabic_example2
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "arabic_stop": {
+          "type":       "stop",
+          "stopwords":  "_arabic_" 
+        },
+        "arabic_keywords": {
+          "type":       "keyword_marker",
+          "keywords":   ["مثال"] 
+        },
+        "arabic_stemmer": {
+          "type":       "stemmer",
+          "language":   "arabic"
+        }
+      },
+      "char_filter": {
+        "my_mappings_char_filter": {
+          "type": "mapping",
+          "mappings": [
+        "٠ => 0",
+        "١ => 1",
+        "٢ => 2",
+        "٣ => 3",
+        "٤ => 4",
+        "٥ => 5",
+        "٦ => 6",
+        "٧ => 7",
+        "٨ => 8",
+        "٩ => 9"
+      ]
+        }
+      },
+      "analyzer": {
+        "rebuilt_arabic2": {
+          "tokenizer":  "standard",
+          "char_filter": [
+            "my_mappings_char_filter"
+          ],
+          "filter": [
+            "lowercase",
+            "decimal_digit",
+            "arabic_stop",
+            "arabic_normalization",
+            "arabic_keywords",
+            "arabic_stemmer"
+          ]
+        }
+      }
+    }
+  }
+}
+
+POST arabic_example2/_bulk
+{"index": {"_id":"133"}}
+{"name": "۱۲۳٤٥٦٧","price":"100.00","description":"لما and new data ذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"122"}}
+{"name": "٤٤٥٥٦٦٧٧","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+
+GET arabic_example2/_analyze
+{
+  "tokenizer": "standard",
+  "char_filter": [ "my_mappings_char_filter" ],
+  "text": "٤٤٥٥٦٦٧٧"
+}
+
+GET arabic_example2/_search
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "٤٤٥٥٦٦٧٧",
+        "analyzer": "rebuilt_arabic"
+      }
+    }
+  }
+}
+
 

@@ -306,3 +306,14 @@ GET index-1/_alias/aliasname
 DELETE <index>/_alias/<alias>
 DELETE <index>/_aliases/<alias>
 
+--to delete data
+
+POST /bankdata_xx/_delete_by_query?conflicts=proceed
+{
+    "query" : {
+        "match" : {
+            "age": 55
+        }
+    }
+}
+
