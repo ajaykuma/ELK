@@ -53,7 +53,11 @@ POST /_sql/translate
 {
   "query": "select age,y,count(*) as count from bankdata where age > 75 group by age,y order by count desc"
 }
---
+
+#using curl:
+--in ES
+curl -XPOST "http://ch1:9200/_sql?format=txt" -H 'Content-Type: application/json' -d'{"query": "select age,y,count(*) as count from bankdata_aj where age > ? group by age,y order by count desc",  "params": [75]  }' > bankres.csv
+
 
 ------------
 
@@ -183,15 +187,12 @@ sql>select * from bankdata;
 ------------
 #running using curl and from command line
 --in OS
-curl -XPOST "http://a1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'{  "query": "select * from bankdata limit 2"}'
-curl -XPOST "http://a1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'
+curl -XPOST "http://ch1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'{  "query": "select * from bankdata limit 2"}'
+curl -XPOST "http://ch1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'
 {"query": "select age,y,count(*) as count from bankdata 
 where age > ? group by age,y order by count desc",
 "parameters": [{"type": "integer", "value": 75}]  }' > bankres.csv
 
---in ES
-curl -XPOST "http://a1:9200/_sql?format=txt" -H 'Content-Type: application/json' -d'{  "query": "select * from bankdata limit 2"}'
-curl -XPUT "http://a1:9200/_sql?format=csv" -H 'Content-Type: application/json' -d'{  "query": "select age,y,count(*) as count from bankdata where age > ? group by age,y order by count desc",  "params": [75]  }' > bankres.csv
 
 
 
