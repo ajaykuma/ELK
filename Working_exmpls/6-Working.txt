@@ -1,4 +1,43 @@
 #Using analyzers:
+#Analyzer examples
+
+POST _analyze
+{
+  "analyzer": "stop",
+  "text": "hey this is test"
+}
+
+--creating analyzer while creating index 
+PUT ecommerce4
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_english_analyzer": {
+          "type": "standard",
+          "max_token_length": 4,
+          "stopwords": "_english_"
+        }
+      }
+    }
+  }
+}
+
+--testing analyzer
+POST ecommerce4/_analyze
+{
+  "analyzer": "my_english_analyzer",
+  "text": "this is awesome playful smart and tokenization"
+}
+
+--stop analyzer
+GET ecommerce/_analyze 
+{
+  "analyzer": "stop",
+  "text": "Test the new Framework"
+}
+
+-------------
 An analyzer  — whether built-in or custom — is just a package which contains three lower-level 
 building blocks: character filters, tokenizers, and token filters.
 
@@ -6,9 +45,9 @@ Character filters are used to preprocess the stream of characters before it is p
 A character filter receives the original text as a stream of characters and can transform the stream by adding, 
 removing, or changing characters. For instance, a character filter could be used 
 to convert Hindu-Arabic numerals (٠‎١٢٣٤٥٦٧٨‎٩‎) into their Arabic-Latin equivalents (0123456789)
-
 --more on this later..
 
+--specifying analyzer for one of the fields (ex: tags)
 PUT /newdata
 {
      "mappings": {
@@ -46,6 +85,7 @@ PUT /newdata
 
 GET /newdata
 
+--specifying analyzer for multiple fields (ex: description,tags)
 Example 2:
 PUT /newproducts
 {
@@ -83,21 +123,116 @@ PUT /newproducts
            "analyzer": "standard"
          }
 }
-}}
 
-POST /newproducts/_bulk
-{"index": {"_id":"10"}}
-{"name": "why ES is Awesome","price":"100.00","description":"This book is all about the ES!","status":"active","quantity":12,"categories":[{"name":"Software","quantity":200}],"tags":["ES the search store","programming JAVA"]}
-{"index": {"_id":"11"}}
-{"name": "why logstash","price":"100.00","description":"processing THE LOGS and sending to ES","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
-{"index": {"_id":"3"}}
-{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is A book which is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming","SEARCHING INdexes"]}
+}
+,
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
 
+
+--take data same as ecommerce2 (referring 3.1)
 #try adding a document with a new field which is not mentioned in mappings defined
 -----------
 
-#Test Query
-1.
+#Querying and using a specific analyzer while querying
+
+--generic
+1.GET newproducts/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#analyzer
+(Optional, string) Analyzer used to convert the text in the query value into tokens. 
+Defaults to the index-time analyzer mapped for the <field>. 
+If no analyzer is mapped, the index’s default analyzer is used.
+
+----------
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description": "elasticsearch"}
+  }
+}
+
+OR
+
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description" : {
+      "query" : "elasticsearch"}
+  }
+}
+}
+
+OR
+
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description" : {
+      "query" : "elasticsearch",
+        "analyzer": "standard"
+      }
+  }
+}
+}
+
+OR
+
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description" : {
+      "query" : "This",
+        "analyzer": "stop"
+      }
+  }
+}
+}
+
+OR
+
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description" : {
+      "query" : "elasticsearch",
+        "analyzer": "english"
+      }
+  }
+}
+}
+
+OR
+
+GET newproducts/_search
+{
+  "query": {
+    "match": {
+      "description" : {
+      "query" : "is",
+        "analyzer": "english"
+      }
+  }
+}
+}
+
+#The analyzer can be set to control which analyzer will perform the analysis process on the text
+----------
+2.
 GET /newproducts/_search
 {
   "query": {
@@ -145,7 +280,7 @@ GET /newproducts/_search
   }
 }
 
---using different analyzer
+--using different analyzer[creating a custom analyzer]
 PUT /german_example
 {
   "settings": {
@@ -198,7 +333,8 @@ POST german_example/_bulk
 
 -----------------
 #Using arabic analyzer
-PUT /arabic_example
+
+PUT /arabic_example1
 {
   "settings": {
     "analysis": {
@@ -217,7 +353,7 @@ PUT /arabic_example
         }
       },
       "analyzer": {
-        "rebuilt_arabic": {
+        "rebuilt_arabic1": {
           "tokenizer":  "standard",
           "filter": [
             "lowercase",
@@ -233,22 +369,51 @@ PUT /arabic_example
   }
 }
 
-##
-If you do not intend to exclude words from being stemmed 
-(the equivalent of the stem_exclusion parameter above), then you should remove the keyword_marker 
-token filter from the custom analyzer configuration.
-
-GET arabic_example/_analyze
-{"analyzer": "rebuilt_arabic",
+GET arabic_example1/_analyze
+{"analyzer": "rebuilt_arabic1",
  "text": "۱۲۳٤٥ مرحبا وكيف حالك"}
- 
- POST arabic_example/_bulk
+
+POST arabic_example1/_bulk
 {"index": {"_id":"11"}}
 {"name": "٦۷٥٥٤٤٦","price":"100.00","description":"لما and new data ذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
-{"index": {"_id":"11"}}
+{"index": {"_id":"12"}}
 {"name": "٦۷٥٥٤٤٦","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
 
 
+GET arabic_example1/_search
+{
+  "query" : {
+    "match" : {
+      "description" : {
+        "query" : "لماذا "
+      }
+    }
+  }
+}
+
+GET arabic_example1/_search
+{
+  "query" : {
+    "match" : {
+      "description" : {
+        "query" : "ذا تنتظر"     
+        }
+    }
+  }
+}
+
+GET arabic_example1/_search
+{
+  "query" : {
+    "match" : {
+      "description" : {
+        "query" : "ذا تنتظر" ,
+        "analyzer": "rebuilt_arabic1"
+        }
+    }
+  }
+
+#using mapping
 --Mapping character filter
 
 GET /_analyze
@@ -267,13 +432,27 @@ GET /_analyze
         "٦ => 6",
         "٧ => 7",
         "٨ => 8",
-        "٩ => 9"
+        "٩ => 9",
+	"0 => ٠ ",
+        "1 => ١",
+        "2 => ٢" ,
+        "3 => ٣",
+        "4 =>  ٤",
+        "5 => ٥",
+        "6 => ٦",
+        "7 => ٧",
+        "8 => ٨",
+        "9 => ٩",
+        "jordan => الأردن",
+	"الأردن => jordan"
       ]
     }
   ],
-  "text": "My license plate is ٢٥٠١٥"
+  "text": "My license plate in jordan is ٢٥٠١٥ and My license plate in الأردن is 12345"
 }
 
+---
+#creating analyzer using mappings as above
 PUT /arabic_example2
 {
   "settings": {
@@ -305,7 +484,19 @@ PUT /arabic_example2
         "٦ => 6",
         "٧ => 7",
         "٨ => 8",
-        "٩ => 9"
+        "٩ => 9",
+	"0 => ٠ ",
+        "1 => ١",
+        "2 => ٢" ,
+        "3 => ٣",
+        "4 =>  ٤",
+        "5 => ٥",
+        "6 => ٦",
+        "7 => ٧",
+        "8 => ٨",
+        "9 => ٩",
+        "jordan => الأردن",
+	"الأردن => jordan"
       ]
         }
       },
@@ -334,6 +525,12 @@ POST arabic_example2/_bulk
 {"name": "۱۲۳٤٥٦٧","price":"100.00","description":"لما and new data ذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
 {"index": {"_id":"122"}}
 {"name": "٤٤٥٥٦٦٧٧","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"1"}}
+{"name": "jordan","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":"٤٤٥","categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"2"}}
+{"name": "الأردن","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":135,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+
+GET arabic_example2/_count
 
 GET arabic_example2/_analyze
 {
@@ -342,18 +539,129 @@ GET arabic_example2/_analyze
   "text": "٤٤٥٥٦٦٧٧"
 }
 
+GET arabic_example2/_analyze
+{
+  "tokenizer": "standard",
+  "char_filter": [ "my_mappings_char_filter" ],
+  "text": "٤٤٥٥٦٦٧٧٤٤٥٥٦٦٧٧"
+}
+
+GET arabic_example2/_analyze
+{
+  "tokenizer": "standard",
+  "char_filter": [ "my_mappings_char_filter" ],
+  "text": "٤٤٥٥٦٦٧٧٤٤٥٥٦٦٧٧jordan"
+}
+
+GET arabic_example2/_analyze
+{
+  "tokenizer": "standard",
+  "char_filter": [ "my_mappings_char_filter" ],
+  "text": "٤٤rdan"
+}
+
+GET arabic_example2/_analyze
+{
+  "tokenizer": "standard",
+  "char_filter": [ "my_mappings_char_filter" ],
+  "text": "777 الأردن"
+}
+
 GET arabic_example2/_search
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
 
 GET arabic_example2/_search
 {
   "query": {
     "match": {
       "name": {
-        "query": "٤٤٥٥٦٦٧٧",
-        "analyzer": "rebuilt_arabic"
+        "query": "٤٤٥٥٦٦٧٧"
       }
     }
   }
 }
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "٤٤٥٥٦٦٧٧"
+      }
+    }
+  }
+}
+
+POST arabic_example2/_bulk
+{"index": {"_id":"3"}}
+{"name": "333-444-777","price":"100.00","description":"لما and new data ذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"12"}}
+{"name": "647-555-111","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":120,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"11"}}
+{"name": "jordan","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":"٤٤٥","categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+{"index": {"_id":"22"}}
+{"name": "الأردن","price":"100.00","description":"لماذا تنتظر","status":"active","quantity":135,"categories":[{"name":"Book","quantity":20}],"tags":["LOG PROCESSING","BEAT PROCESSING"]}
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "۳۳۳-٤٤٤-۷۷۷"
+      }
+    }
+  }
+}
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "۳۳۳-٤٤٤-۷۷۷",
+        "analyzer": "rebuilt_arabic2"
+      }
+    }
+  }
+}
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "333-444-777"
+      }
+    }
+  }
+}
+
+GET arabic_example2/_search
+{
+  "query": {
+    "match": {
+      "name": {
+        "query": "333-444-777",
+        "analyzer": "rebuilt_arabic2"
+      }
+    }
+  }
+}
+
+---------------------
+
 
 

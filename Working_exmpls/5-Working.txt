@@ -7,6 +7,10 @@ GET /ecommerce/_search
 
 GET /ecommerce/_search?q=elasticsearch*
 
+#
+The match query analyzes any provided text before performing a search.
+This means the match query can search text fields for analyzed tokens rather than an exact term.
+
 GET /ecommerce/_search
 {
   "query": {
@@ -139,46 +143,3 @@ GET /ecommerce/_search
 }
 
 ---------
-#Analyzer examples
-POST _analyze
-{
-  "analyzer": "stop",
-  "text": "hey this is test"
-}
-
-
-PUT ecommerce4
-{
-  "settings": {
-    "analysis": {
-      "analyzer": {
-        "my_english_analyzer": {
-          "type": "standard",
-          "max_token_length": 4,
-          "stopwords": "_english_"
-        }
-      }
-    }
-  }
-}
-
-POST ecommerce4/_analyze
-{
-  "analyzer": "my_english_analyzer",
-  "text": "this is awesome playful smart and tokenization"
-}
-
-#ES analyzer is used to search for phrase 
-#this will show what was used by analyzer when tokenizing and list of tokens
---standard analyzer
-GET ecommerce/_analyze
-{"analyzer": "standard",
- "text": "Test Framework"}
-
---stop analyzer
-GET ecommerce/_analyze 
-{
-  "analyzer": "stop",
-  "text": "Test the new Framework"
-}
-
