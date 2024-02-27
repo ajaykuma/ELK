@@ -61,8 +61,8 @@ If path was not shared ,you may get this error
 #restart elasticsearch & Kibana
 ===================================
 #creating backup
-#register the repository
 
+#register the repository
 PUT /_snapshot/demobackup
 {
    "type": "fs",
@@ -86,7 +86,15 @@ GET /ecomtest/_search
 
 PUT /_snapshot/demobackup/snapshot-one?wait_for_completion=true
 
-get /_cat/indices?v
+or we ca take a snapshop of selective indexes
+PUT /_snapshot/demo1/snapshot_1_aj
+             {
+         "indices": "bankdata_oa",
+         "ignore_unavailable": "true",
+         "include_global_state": false
+              }
+
+GET /_cat/indices?v
 
 DELETE /ecomtest
 
@@ -107,4 +115,6 @@ POST /_snapshot/demobackup/snapshot-one2/_restore
 For example:
 root@e1:~# ls /mydata
 incompatible-snapshots  index-0  index.latest  indices  meta-xNjRxXMJRGqHoOv7eZD1OA.dat  snap-xNjRxXMJRGqHoOv7eZD1OA.dat
+
+similarly do it from kibana > state management ? snapshots and restore using policies.
 ============================

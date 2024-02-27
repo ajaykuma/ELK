@@ -1,0 +1,86 @@
+Currently we have totally 4 nodes
+3 nodes are master eligible and also action as data nodes
+1 node is not master eligible but just acting as data node.
+
+Which means at any point of time we can have max 1 copy as primary & 3 copies(as replicas) (on avai 4 data nodes)
+Our index was created with default 5 primary shards, 1 replica shards
+(which means data of index is divided into 5 shards and each shard has 1 replica)
+
+#The distribution of primary and replica shards is as follows:
+get /_cat/shards/population?pretty=true
+
+#overall health for this index
+get /_cluster/health/population?level=shards
+
+#looking at more specific information
+get /_cat/shards/population?h=index,shard,prirep,dc,state,node
+
+pulation 3 r 104 STARTED data3
+population 3 p 104 STARTED data2
+population 4 p 100 STARTED master
+population 4 r 100 STARTED data3
+population 1 p  89 STARTED data3
+population 1 r  89 STARTED data2
+population 2 r  87 STARTED master
+population 2 p  87 STARTED data1
+population 0 p  86 STARTED master
+population 0 r  86 STARTED data1
+
+
+#Let's consider one of the nodes (data3) and what it contains
+Before node-data3 shutdown
+data3
+shard 4 replica
+shard 1 primary
+
+master
+shard 4 primary
+
+data2
+shard 1 replica
+
+Test if nodes containing replicas will turn into primary or other nodes 
+will be picked up for primary shard allocation
+
+After node-data3 shutdown
+get /_cat/shards/population?h=index,shard,prirep,dc,state,node
+
+population 3 p 104 STARTED    data2
+population 3 r     UNASSIGNED 
+population 4 p 100 STARTED    master
+population 4 r     UNASSIGNED 
+population 1 p  89 STARTED    data2
+population 1 r     UNASSIGNED 
+population 2 r  87 STARTED    master
+population 2 p  87 STARTED    data1
+population 0 p  86 STARTED    master
+population 0 r  86 STARTED    data1
+
+master
+shard 4 replica--now shows as primary
+unassigned: shard 4 replica
+
+data2
+shard 1 replica--now shows as primary
+unassigned:shard 1 replica
+
+i.e. replica shards became primary
+
+in few seconds we see the replicas are assigned to other available nodes
+population 3 r 104 STARTED master
+population 3 p 104 STARTED data2
+population 4 p 100 STARTED master
+population 4 r 100 STARTED data2
+population 1 r  89 STARTED data1
+population 1 p  89 STARTED data2
+population 2 r  87 STARTED master
+population 2 p  87 STARTED data1
+population 0 p  86 STARTED master
+population 0 r  86 STARTED data1
+
+
+
+
+
+
+
