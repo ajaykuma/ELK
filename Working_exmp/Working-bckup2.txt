@@ -1,0 +1,110 @@
+#If ES in a cluster
+#Setup NFS for your cluster to handle backup & restore
+#on node1
+sudo apt-get install nfs-kernel-server
+sudo apt-get install nfs-common
+
+#on node2
+sudo apt-get install nfs-common
+
+#on node3
+sudo apt-get install nfs-common
+
+#Now on node1
+service nfs-kernel-server start
+
+#create a directory
+sudo mkdir /mydata
+sudo chown -R hdu:hdu /mydata
+
+#for NFS setup
+create and edit a file
+sudo vi /etc/exports
+/mydata      *(rw,sync,no_root_squash)
+:wq
+
+exportfs -a
+
+#on all nodes check
+showmount -e 192.168.56.106
+
+#on all nodes mount ur path to this shared path
+
+Note** create directory /home/hdu/ESbckup on all nodes,which will be mounted and 
+thus used to store snapshots
+#creating mount point
+sudo mount -t nfs 192.168.56.106:/mydata /home/hdu/ESbckup
+
+#stop elasticsearch on all nodes
+systemctl stop elasticsearch.service
+
+#stop kibana on node wherver its running
+systemctl stop kibana.service
+
+#update or add in /etc/elasticsearch/elasticsearch.yml
+path.repo: /home/hdu/ESbckup
+
+If path was not shared ,you may get this error
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "repository_verification_exception",
+        "reason": "[demobackup] [[U6x0RNwHREezh1GD6gQfBw, 'RemoteTransportException[[master][192.168.251.47:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{master}{U6x0RNwHREezh1GD6gQfBw}{J1TMo5q_Q-u0df5dauTzDA}{192.168.251.47}{192.168.251.47:9300}{ml.machine_memory=7841591296, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];'], [E-bILjQgSnyHmHNwpd-LZg, 'RemoteTransportException[[data3][192.168.251.63:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{data3}{E-bILjQgSnyHmHNwpd-LZg}{f6hNqasYSCmCXVOeJka3og}{192.168.251.63}{192.168.251.63:9300}{ml.machine_memory=7545880576, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];'], [lJ3cdrNDRCiXaWa5Dkou_A, 'RemoteTransportException[[data2][192.168.251.49:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{data2}{lJ3cdrNDRCiXaWa5Dkou_A}{QWPjyOzJThmDI-tY6ThJow}{192.168.251.49}{192.168.251.49:9300}{ml.machine_memory=7165411328, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];']]"
+      }
+    ],
+    "type": "repository_verification_exception",
+    "reason": "[demobackup] [[U6x0RNwHREezh1GD6gQfBw, 'RemoteTransportException[[master][192.168.251.47:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{master}{U6x0RNwHREezh1GD6gQfBw}{J1TMo5q_Q-u0df5dauTzDA}{192.168.251.47}{192.168.251.47:9300}{ml.machine_memory=7841591296, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];'], [E-bILjQgSnyHmHNwpd-LZg, 'RemoteTransportException[[data3][192.168.251.63:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{data3}{E-bILjQgSnyHmHNwpd-LZg}{f6hNqasYSCmCXVOeJka3og}{192.168.251.63}{192.168.251.63:9300}{ml.machine_memory=7545880576, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];'], [lJ3cdrNDRCiXaWa5Dkou_A, 'RemoteTransportException[[data2][192.168.251.49:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by master to the store [/usr/local/mybackup] cannot be accessed on the node [{data2}{lJ3cdrNDRCiXaWa5Dkou_A}{QWPjyOzJThmDI-tY6ThJow}{192.168.251.49}{192.168.251.49:9300}{ml.machine_memory=7165411328, xpack.installed=true, ml.max_open_jobs=20, ml.enabled=true}]. This might indicate that the store [/usr/local/mybackup] is not shared between this node and the master node or that permissions on the store don't allow reading files written by the master node];']]"
+  },
+  "status": 500
+}
+#restart elasticsearch & Kibana
+===================================
+#creating backup
+#register the repository
+
+PUT /_snapshot/demobackup
+{
+   "type": "fs",
+   "settings": {
+       "compress": true,
+       "location": "/home/hdu/ESbckup"
+    }
+}
+
+GET _snapshot/_all
+
+PUT /ecomtest/product/_bulk
+{"index": {"_id":"1004"}}
+{"name": "why ES is Awesome","price":"100.00","description":"This book is all about ES!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["ES","programming"]}
+{"index": {"_id":"1005"}}
+{"name": "cashewnuts","price":"100.00","description":"spicy cashewnuts","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1006"}}
+{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+
+GET /ecomtest/_search
+
+PUT /_snapshot/demobackup/snapshot-one?wait_for_completion=true
+
+get /_cat/indices?v
+
+DELETE /ecomtest
+
+POST /_snapshot/demobackup/snapshot-one/_restore
+{"indices":"ecomtest"}
+
+--create new snapshot
+PUT _snapshot/demobackup/snapshot-one2?wait_for_completion=true
+
+DELETE ecommer*
+
+POST /_snapshot/demobackup/snapshot-one2/_restore
+{"indices": ["ecommerce","ecommerce2","ecommerce3"]}
+
+#check if index is back
+
+#Also check your mounted path if it has snapshots
+For example:
+root@e1:~# ls /mydata
+incompatible-snapshots  index-0  index.latest  indices  meta-xNjRxXMJRGqHoOv7eZD1OA.dat  snap-xNjRxXMJRGqHoOv7eZD1OA.dat
+============================

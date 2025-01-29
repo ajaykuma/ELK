@@ -1,0 +1,131 @@
+ES Important Settings
+-------------------
+
+#Heap settings:
+
+By default, ES tells JVM to use a heap with a minimum and maximum size of 1 GB. 
+Configure heap size to ensure that Elasticsearch has enough heap available.
+
+Elasticsearch will assign the entire heap specified in jvm.options via the 
+Xms (minimum heap size) 
+Xmx (maximum heap size) 
+
+You should set these two settings to be equal to each other.
+
+The value for these settings depends on the amount of RAM available on your server:
+
+Set Xmx and Xms to no more than 50% of your physical RAM. ES requires memory for purposes other than the JVM heap 
+and it is important to leave space for this. 
+
+For example: 
+-ES uses off-heap buffers for efficient network communication, 
+-relies on the operating system’s filesystem cache for efficient access to files, 
+-JVM itself requires some memory too. 
+
+It is normal to observe the Elasticsearch process using more memory than the limit configured with the Xmx setting.
+Set Xmx and Xms to no more than the threshold that the JVM uses for compressed object pointers (compressed oops); 
+the exact threshold varies but is near 32 GB. 
+
+You can verify that you are under the threshold by looking for a line in the logs like the following:
+heap size [1.9gb], compressed ordinary object pointers [true]
+
+Ideally set Xmx and Xms to no more than the threshold for zero-based compressed oops; 
+the exact threshold varies but 26 GB is safe on most systems, but can be as large as 30 GB on some systems. 
+You can verify that you are under this threshold by starting Elasticsearch with the JVM options 
+
+-XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode 
+
+and looking for a line like the following:
+
+heap address: 0x000000011be00000, size: 27648 MB, zero based Compressed Oops
+showing that zero-based compressed oops are enabled. If zero-based compressed oops are not enabled then you will 
+see a line like the following instead:
+
+heap address: 0x0000000118400000, size: 28672 MB, Compressed Oops with base: 0x00000001183ff000
+The more heap available to Elasticsearch, the more memory it can use for its internal caches, but the 
+less memory it leaves available for the operating system to use for the filesystem cache. 
+Also, larger heaps can cause longer garbage collection pauses.
+
+set the heap size via a jvm.options.d/ file:
+-Xms2g 
+-Xmx2g 
+
+via environment variable:
+ES_JAVA_OPTS="-Xms2g -Xmx2g" ./bin/elasticsearch 
+ES_JAVA_OPTS="-Xms4000m -Xmx4000m" ./bin/elasticsearch 
+
+--------------
+#JVM heap dump path
+By default, ES configures the JVM to dump the heap on out of memory exceptions to the default data directory
+(this is /var/lib/elasticsearch for the RPM and Debian package distributions, 
+and the data directory under the root of the ES home for the tar and zip archive distributions). 
+If this path is not suitable for receiving heap dumps, you should modify the 
+entry 
+-XX:HeapDumpPath=... in jvm.options. 
+If you specify a directory, the JVM will generate a filename for the heap dump based on the PID of the running instance.
+If you specify a fixed filename instead of a directory, the file must not exist when the JVM needs to perform a 
+heap dump on an out of memory exception, otherwise the heap dump will fail.
+
+-------------
+#GC logging
+By default, Elasticsearch enables GC logs. These are configured in jvm.options and output to the same default location
+as the Elasticsearch logs. The default configuration rotates the logs every 64 MB and can consume up to 2 GB of disk space.
+
+You can reconfigure JVM logging using the command line options described in 
+JEP 158: Unified JVM Logging. 
+Unless you change the default jvm.options file directly, the ES default configuration is applied in 
+addition to your own settings. 
+To disable the default configuration, first disable logging by supplying the 
+-Xlog:disable option, then supply your own command line options. 
+This disables all JVM logging.
+
+example:
+Change the default GC log output location to /opt/my-app/gc.log by 
+creating $ES_HOME/config/jvm.options.d/gc.options with some sample options:
+
+# Turn off all previous logging configuratons
+-Xlog:disable
+
+# Default settings from JEP 158, but with `utctime` instead of `uptime` to match the next line
+-Xlog:all=warning:stderr:utctime,level,tags
+
+# Enable GC logging to a custom location with a variety of options
+-Xlog:gc*,gc+age=trace,safepoint:file=/opt/my-app/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+-------------
+#Temp Directory:
+
+By default, ES uses a private temporary directory that the startup script creates immediately 
+below the system temporary directory.
+
+On some Linux distributions a system utility will clean files and directories from /tmp if they have not been 
+recently accessed. This can lead to the private temporary directory being removed while Elasticsearch is running 
+if features that require the temporary directory are not used for a long time. 
+This causes problems if a feature that requires the temporary directory is subsequently used.
+
+If you install Elasticsearch using the .deb or .rpm packages and run it under systemd then the private 
+temporary directory that Elasticsearch uses is excluded from periodic cleanup.
+
+However, if you intend to run the .tar.gz distribution on Linux for an extended period then you should 
+consider creating a dedicated temporary directory for Elasticsearch that is not under a 
+path that will have old files and directories cleaned from it. 
+This directory should have permissions set so that only the user that Elasticsearch runs as can access it. 
+
+Then set the $ES_TMPDIR environment variable to point to it before starting Elasticsearch.
+
+-------------
+#JVM fatal error logs
+
+By default, Elasticsearch configures the JVM to write fatal error logs to the default logging directory 
+(this is /var/log/elasticsearch for the RPM and Debian package distributions, and the logs directory 
+under the root of the ES installation for the tar and zip archive distributions). 
+These are logs produced by the JVM when it encounters a fatal error (e.g., a segmentation fault). 
+If this path is not suitable for receiving logs, you should modify the entry 
+-XX:ErrorFile=... in jvm.options to an alternate path.
+
+---------------
+
+
+
+
+

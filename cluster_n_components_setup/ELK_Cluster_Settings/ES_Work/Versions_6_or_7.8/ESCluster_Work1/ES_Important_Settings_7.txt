@@ -1,0 +1,213 @@
+Nodes & cluster
+-------------
+Every node in the cluster can handle HTTP and transport traffic by default. 
+The transport layer is used exclusively for communication between nodes; 
+the HTTP layer is used by REST clients.
+
+Define a node’s roles by setting node.roles in elasticsearch.yml
+
+Some Elastic Stack features also require specific node roles:
+
+Cross-cluster search and cross-cluster replication require the remote_cluster_client role.
+Stack Monitoring and ingest pipelines require the ingest role.
+Fleet, the Elastic Security app, and transforms require the transform role. 
+The remote_cluster_client role is also required to use cross-cluster search with these features.
+Machine learning features, such as anomaly detection, require the ml role.
+
+Master Node:
+The node to which we assign a master role is called a “master” node. 
+The master node manages all cluster operations like creating/deleting an index 
+and it keeps track of all available nodes in the cluster. While creating shards, 
+the master node decides the node upon which each shard should be allocated.
+(master-eligible node can take part in election and be elected as master node)
+Any master-eligible node except the “Voting-only” 
+node can become a master node during the master election process. 
+
+Note** If no node is set with ingest role, we might see this error message:
+[WARN ][o.e.x.m.MonitoringService] [data2] monitoring execution failed
+org.elasticsearch.xpack.monitoring.exporter.ExportException: failed to flush export bulks
+Caused by: java.lang.IllegalStateException: There are no ingest nodes in this cluster, 
+unable to forward request to an ingest node.
+
+Data Node:
+The node to which we assign a data role is called a “data” node. A data node holds the 
+indexed data and it takes care of CRUD, search and aggregations (operations related to the data).
+Without a data node it is difficult for a cluster to operate. 
+
+There are specialized data roles like data_content, data_hot, data_cold, data_warm and data_frozen.
+
+Data_content_node:
+Data content nodes are part of the content tier. These types of nodes will be used mainly 
+to store archive and catalog data, where we might not do real-time indexing or frequent indexing 
+like logs.These types of data will not be indexed frequently.
+
+Data_hot:
+Data hot nodes are part of the hot tier. This role is not necessary unless you want to configure 
+hot-cold architecture.
+Hot tier nodes are mainly used to store the most frequently updated and recent data. 
+These types of data nodes should be fast during both search and indexing. 
+Therefore, they require more RAM, CPU and fast storage.
+
+Data_warm:
+Data warm nodes are part of the warm tier. This role is not necessary unless you want to configure 
+hot-cold architecture.
+Warm tier nodes are used for storing time series data that are less frequently queried 
+and rarely updated. Warm nodes will typically have larger storage capacity in relation 
+to their RAM and CPU.
+
+Data_cold:
+Data cold nodes are part of the cold tier. This role is not necessary unless you want to 
+configure hot-cold architecture.
+Time series data that no longer needs to be searched regularly will be moved from 
+the warm tier to the cold tier.
+Since search performance is not a priority, these nodes are usually configured to have 
+higher storage capacity for a given RAM and CPU.
+
+Data_frozen:
+Data frozen nodes are part of the frozen tier.  This role is not necessary unless you want to 
+configure hot-cold architecture.
+Data that is queried rarely and never updated will be moved from cold tier to the frozen tier.
+This type of node may reduce storage and operating costs, while still allowing the user 
+to search on frozen data.
+
+refer:https://opster.com/guides/elasticsearch/capacity-planning/elasticsearch-hot-warm-cold-frozen-architecture/
+
+Coordinating node
+Coordinating-only nodes act as load-balancers. This type of node routes requests to data nodes 
+and handles bulk indexing/search requests by distributing the requests.
+These types of nodes are used in larger clusters. By getting the cluster state from all the nodes, 
+the coordinating-only node will route requests accordingly.
+In small clusters, it is usually not necessary to use a coordinating node, since the same role 
+will be handled by data nodes, and the greater complexity is not justified on a small cluster.
+Note**A search request, is executed in two phases which are coordinated by this node.
+
+In the scatter phase, the coordinating node forwards the request to the data nodes which hold the data. 
+Each data node executes the request locally and returns its results to the coordinating node. 
+In the gather phase, the coordinating node reduces each data node’s results into a single global result 
+set.
+Every node is implicitly a coordinating node.
+
+--Have a dedicated 'master-eligible node'. (to avoid overloading master nodes)
+
+Voting-only master-eligible node:
+A voting-only master-eligible node is a node that participates in master elections 
+but which will not act as the cluster’s elected master node. In particular, 
+a voting-only node can serve as a tiebreaker in elections.
+
+Since dedicated voting-only nodes never act as the cluster’s elected master, they may require less 
+heap and a less powerful CPU than the true master nodes. However all master-eligible nodes, 
+including voting-only nodes, are on the critical path for publishing cluster state updates. 
+
+Remote-eligible node:
+A remote-eligible node acts as a cross-cluster client and connects to remote clusters. 
+Once connected, you can search remote clusters using cross-cluster search. 
+You can also sync data between clusters using cross-cluster replication.
+
+Machine learning node:
+Machine learning nodes run jobs and handle machine learning API requests. 
+
+Transform node:
+Transform nodes run transforms and handle transform API requests. 
+
+About roles and data:
+Each data node maintains the following data on disk:
+the shard data for every shard allocated to that node,
+the index metadata corresponding with every shard allocated to that node, and
+the cluster-wide metadata, such as settings and index templates.
+
+Similarly, each master-eligible node maintains the following data on disk:
+the index metadata for every index in the cluster, and
+the cluster-wide metadata, such as settings and index templates.
+Each node checks the contents of its data path at startup. If it discovers unexpected data 
+then it will refuse to start. 
+
+#setting path on command line
+./bin/elasticsearch -Epath.data=/<path>/data
+
+To repurpose a data node by removing the data role then you should first use an allocation 
+filter to safely migrate all the shard data onto other nodes in the cluster.
+
+or
+
+use the elasticsearch-node repurpose tool to delete any excess data that prevents a node from starting.
+
+
+----------
+Changing settings:
+--example 1:
+PUT /my-index-xxxx/_settings
+{
+  "index.blocks.read_only_allow_delete": null
+}
+
+#Elasticsearch enforces a read-only index block (index.blocks.read_only_allow_delete) on every index 
+that has one or more shards allocated on the node, and that has at least one disk exceeding the 
+flood stage. 
+
+--example 2:
+PUT _cluster/settings
+{
+  "transient": {
+    "cluster.routing.allocation.disk.watermark.low": "80gb",
+    "cluster.routing.allocation.disk.watermark.high": "30gb",
+    "cluster.routing.allocation.disk.watermark.flood_stage": "8gb",
+    "cluster.info.update.interval": "1m"
+  }
+}
+
+--Example 3:
+shard allocation (rack awareness)
+node.attr.rack_id: rack_one
+
+ or
+
+./bin/elasticsearch -Enode.attr.rack_id=rack_one
+
+--to take one or more awareness attributes into account when allocating shards
+cluster.routing.allocation.awareness.attributes: rack_id
+
+--using Shard allocation filters
+The cluster.routing.allocation settings are dynamic, enabling live indices to be moved from one set 
+of nodes to another. Shards are only relocated if it is possible to do so without breaking another 
+routing constraint, such as never allocating a primary and replica shard on the same node.
+The most common use case for cluster-level shard allocation filtering is when you want to 
+decommission a node. To move shards off of a node prior to shutting it down, you could create a 
+filter that excludes the node by its IP
+
+PUT _cluster/settings
+{
+  "persistent" : {
+    "cluster.routing.allocation.exclude._ip" : "10.0.x.x"
+  }
+}
+
+---
+
+#using wildcards
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.exclude._ip": "192.168.2.*"
+  }
+}
+
+--refer 
+https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-state-publishing.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

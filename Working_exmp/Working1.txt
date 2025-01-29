@@ -1,0 +1,47 @@
+#we can use 'KIBANA>DEV TOOLS"
+#Open browser and access kibana "http://<hostname>:5601" 
+[assuming elasticsearch and kibana services are running]
+
+#checking nodes to begin
+GET /_cat/nodes?v
+
+#Searching/Listing Index
+1.
+#Using '_cat' API we can retrieve information from cluster in human friendly format
+
+GET /_cat/indices?v
+
+#Result on right shows various information about our cluster such as number of private shards, replicas,
+#shards, documents, deleted documents etc..
+#By default ES created one replica for indexes , If index is created with more replicas ,replicas are allocated to other nodes
+#Note** we dont need to add index before adding a document to it.By adding a document, ES creates index
+#with default settings automatically.
+
+--------------------------------
+#creating Index
+2.
+
+PUT /ecommerce
+{
+}
+
+#Here the above command is translated to HTTP request that uses HTTP puts
+#If using curl/connecting to ES in an application  we would have to use fully qualified URL .
+We can find the same , 
+#using the settings icon and 'copy as URL'
+#if we copy the curl request, it will automatically be convereted into required syntax
+
+#check if index is created by looking for 'acknowledged:true' on right panel
+#if tried using curl command and if index exists:
+
+--curl -XPUT "http://a1:9200/ecommerce" -H 'Content-Type: application/json' -d'{}'
+
+{"error":{"root_cause":[{"type":"resource_already_exists_exception","reason":"index [ecommerce/FU8FJZC8TK6NyFw-I3Zl_g] already exists","index_uuid":"FU8FJZC8TK6NyFw-I3Zl_g","index":"ecommerce"}],"type":"resource_already_exists_exception","reason":"index [ecommerce/FU8FJZC8TK6NyFw-I3Zl_g] already exists","index_uuid":"FU8FJZC8TK6NyFw-I3Zl_g","index":"ecommerce"},"status":400}
+
+---------------------------------
+#Deleting Index
+3.DELETE /ecommerce
+
+#Test if it was deleted, by listing indexes as in #2
+
+

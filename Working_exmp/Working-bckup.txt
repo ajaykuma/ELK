@@ -1,0 +1,53 @@
+#If ES running on standalone
+
+#creating backup
+$mkdir ESbckup
+$chown -R elasticsearch:elasticsearch ESbckup
+
+#This directory will be used to store snapshots
+
+#update elasticsearch.yml
+path.repo: ["ESbckup"]
+
+$service elasticsearch restart
+
+#register the repository
+PUT /_snapshot/demobackup
+{
+   "type": "fs",
+   "settings": {
+       "compress": true,
+       "location": "ESbackup"
+    }
+}
+
+--if above command is run on a node of cluster
+--it shows following error & may effect restore failure/with errors (shards missing)
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "repository_verification_exception",
+        "reason": "[demobackup] [[E_eQo4d-TNuw8duwTuf5Ag, 'RemoteTransportException[[Node2][192.168.56.107:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by cluster-manager to the store [/usr/local/opensearch-2.6.0/ESbckup/ESbackup] cannot be accessed on the node [{Node2}{E_eQo4d-TNuw8duwTuf5Ag}{WbY32tfEQOGyJf6BWnOkRw}{a2}{192.168.56.107:9300}{dm}{shard_indexing_pressure_enabled=true}]. This might indicate that the store [/usr/local/opensearch-2.6.0/ESbckup/ESbackup] is not shared between this node and the cluster-manager node or that permissions on the store don't allow reading files written by the cluster-manager node]; nested: NoSuchFileException[/usr/local/opensearch-2.6.0/ESbckup/ESbackup/tests-69M0xV1aQIu-ShtO4_8JOg/master.dat];'], [FchxrvROREGR5bB8aWiXkw, 'RemoteTransportException[[Node3][192.168.56.110:9300][internal:admin/repository/verify]]; nested: RepositoryVerificationException[[demobackup] a file written by cluster-manager to the store [/usr/local/opensearch-2.6.0/ESbckup/ESbackup] cannot be accessed on the node [{Node3}{FchxrvROREGR5bB8aWiXkw}{oQ3rult9S5axnuEn5_UQcg}{a3}{192.168.56.110:9300}{dm}{shard_indexing_pressure_enabled=true}]. This might indicate that the store [/usr/local/opensearch-2.6.0/ESbckup/ESbackup] is not shared between this node and the cluster-manager node or that permissions on the store don't allow reading files written by the cluster-manager node]; nested: NoSuchFileException[/usr/local/opensearch-2.6.0/ESbckup/ESbackup/tests-69M0xV1aQIu-ShtO4_8JOg/master.dat];']]"
+      }
+
+GET /_snapshot/_all
+
+#create index and a document
+
+#taking a snapshot of ES cluster
+PUT /_snapshot/demobackup/snaphot-one?wait_for_completion=true
+
+#delete (one of the)index you created
+DELETE ecommer*
+
+GET /_cat/indices?v
+GET /_cat/indices/ecomm*?v
+
+#restore the data from snapshot
+POST localhost:9200/_snapshot/demobackup/snaphot-one/_restore
+{"indices":"index_name"}
+#
+
+#CHECK IF DATA IS BACK
+

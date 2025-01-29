@@ -1,0 +1,197 @@
+Query examples after ingesting data using logstash 
+---------------------------------
+--refer logstash specific folder for instructions to load file
+Queries using Dev tools >
+
+POST /_sql?format=txt
+{
+  "query": "select * from bankdata"
+}
+
+GET /_sql?format=txt
+{
+  "query": "select * from bankdata",
+  "filter": {
+    "range": {
+      "balance": {
+        "gte": 500,
+        "lte": 1200
+      }
+    }
+  },
+  "fetch_size": 5
+}
+
+--
+GET /_sql?format=txt
+{
+  "query": "select * from bankdata",
+  "filter": {
+    "terms": {
+      "_routing": ["age"]
+    }
+  },
+  "fetch_size": 5
+}
+
+--
+POST /_sql?format=json
+{
+  "query": "select age,marital from bankdata order by age desc limit 10",
+  "columnar": true
+}
+--
+--if using in OS, remove params and change ? in where clause
+POST /_sql?format=txt
+{
+  "query": "select age,y,count(*) as count from bankdata where age > ? group by age,y order by count desc",
+  "params": [75]
+  
+}
+--
+POST /_sql/translate
+{
+  "query": "select age,y,count(*) as count from bankdata where age > 75 group by age,y order by count desc"
+}
+--
+
+------------
+
+-----For OpenSearch------
+#Use the _sql endpoint to send queries in SQL
+#use these instead of 'POST /_sql?format=txt OR GET /_sql?format=txt'
+#The _sql endpoint supports jdbc, csv, raw, and json formats
+POST /_plugins/_sql
+
+schema	        Array	 Specifies the field names and types for all fields.
+data_rows	2D array An array of results. Each result represents one matching row (document).
+total	        Integer	 The total number of rows (documents) in the index.
+size	        Integer	 The number of results to return in one response.
+status	        String	 The HTTP response status OpenSearch returns after running the query.
+
+#Use the _sql endpoint to send queries in SQL
+POST /_plugins/_sql
+{
+  "query": "select * from bankdata"
+}
+
+#using pagination
+POST _plugins/_sql/
+{
+  "fetch_size" : 5,
+  "query": "select * from bankdata"
+}
+
+#To fetch subsequent pages, use the cursor from the previous response:
+POST /_plugins/_sql 
+{
+   "cursor": ""
+}
+
+#using explain
+POST /_plugins/_sql/_explain
+{
+  "query": "select * from bankdata"
+}
+
+#using paramters
+POST /_plugins/_sql 
+{
+  "query": "SELECT * FROM bankdata WHERE age = ?",
+  "parameters": [{
+    "type": "integer",
+    "value": 30
+  }]
+}
+
+POST /_plugins/_sql/_explain 
+{
+  "query": "SELECT * FROM bankdata WHERE age = ?",
+  "parameters": [{
+    "type": "integer",
+    "value": 30
+  }]
+}
+
+#changing output format
+POST /_plugins/_sql?format=json
+{
+  "query": "select * from bankdata"
+}
+
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select age,marital from bankdata order by age desc limit 10"
+}
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select * from bankdata",
+  "filter": {
+    "range": {
+      "balance": {
+        "gte": 500,
+        "lte": 1200
+      }
+    }
+  },
+  "fetch_size": 5
+}
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select * from bankdata",
+  "filter": {
+    "terms": {
+      "_routing": ["age"]
+    }
+  },
+  "fetch_size": 5
+}
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select age,marital from bankdata order by age desc limit 10",
+  "columnar": true
+}
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select age,y,count(*) as count from bankdata where age > 55 group by age,y order by count desc"
+  
+}
+
+POST /_plugins/_sql?format=json
+{
+  "query": "select age,y,count(*) as count from bankdata where age > 75 group by age,y order by count desc"
+}
+
+#to test other formats
+#POST /_plugins/_sql?format=raw
+#POST /_plugins/_sql?format=csv
+-------------
+--in OS
+Queries can be run from 'Query Workbench'
+>select age,y,count(*) as count from bankdata where age > 75 group by age,y order by count desc
+
+--in ES
+#using elasticsearch-sql-cli
+$elasticsearch-sql-cli http://c1:9200
+sql>select * from bankdata;
+
+------------
+#running using curl and from command line
+--in OS
+curl -XPOST "http://a1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'{  "query": "select * from bankdata limit 2"}'
+curl -XPOST "http://a1:9200/_plugins/_sql?format=csv" -H 'Content-Type: application/json' -d'
+{"query": "select age,y,count(*) as count from bankdata 
+where age > ? group by age,y order by count desc",
+"parameters": [{"type": "integer", "value": 75}]  }' > bankres.csv
+
+--in ES
+curl -XPOST "http://a1:9200/_sql?format=txt" -H 'Content-Type: application/json' -d'{  "query": "select * from bankdata limit 2"}'
+curl -XPUT "http://a1:9200/_sql?format=csv" -H 'Content-Type: application/json' -d'{  "query": "select age,y,count(*) as count from bankdata where age > ? group by age,y order by count desc",  "params": [75]  }' > bankres.csv
+
+
+

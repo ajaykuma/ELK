@@ -1,0 +1,78 @@
+To perform a rolling upgrade to 7.17.8:
+
+When you shut down a data node, the allocation process waits for 
+index.unassigned.node_left.delayed_timeout (by default, one minute) 
+before starting to replicate the shards on that node to other nodes in the cluster
+--disable allocation of replicas
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.enable": "primaries"
+  }
+}
+
+Stop non-essential indexing and perform a synced flush. (Optional)
+While you can continue indexing during the upgrade, 
+shard recovery is much faster if you temporarily stop non-essential indexing and perform a synced-flush.
+
+POST _flush/synced
+
+Temporarily stop the tasks associated with active machine learning jobs and datafeeds. (Optional)(if any)
+POST _ml/set_upgrade_mode?enabled=true
+
+shutdown a single node:
+sudo systemctl stop elasticsearch.service
+OR
+sudo -i service elasticsearch stop
+OR
+kill $(cat pid)
+
+--upgrade the node by updating ES_PATH to new version
+
+Use the elasticsearch-plugin script to install the upgraded version of each installed Elasticsearch
+ plugin.
+
+start upgraded node..
+
+reenable shad allocation
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.enable": null
+  }
+
+wait for node to recover
+GET _cat/health?v=true
+
+
+During a rolling upgrade, primary shards assigned to a node running the new version 
+cannot have their replicas assigned to a node with the old version. 
+The new version might have a different data format that is not understood by the old version.
+
+If it is not possible to assign the replica shards to another node
+ (there is only one upgraded node in the cluster), the replica shards remain unassigned 
+and status stays yellow.
+
+monitor the recovery status of individual shards by submitting a _cat/recovery request:
+GET _cat/recovery
+
+repeat steps for each node
+get the status of cluster
+GET /_cat/health?v=true
+
+check which nodes have been upgraded
+GET /_cat/nodes?h=ip,name,version&v=true
+
+restart ML jobs if they were halt
+POST _ml/set_upgrade_mode?enabled=false
+
+
+During a rolling upgrade, the cluster continues to operate normally. However, 
+any new functionality is disabled or operates in a backward compatible mode until 
+all nodes in the cluster are upgraded. New functionality becomes operational once the 
+upgrade is complete and all nodes are running the new version. Once that has happened, 
+there’s no way to return to operating in a backward compatible mode. Nodes running the 
+previous version will not be allowed to join the fully-updated cluster.
+
+

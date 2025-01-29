@@ -1,0 +1,72 @@
+--
+future versions of Elasticsearch will require Java 11; your Java version from [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre] does not meet this requirement
+future versions of Elasticsearch will require Java 11; your Java version from [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre] does not meet this requirement
+[2023-01-17T14:02:01,238][INFO ][o.e.n.Node               ] [data1] version[7.8.0], pid[3000], build[default/tar/757314695644ea9a1dc2fecd26d1a43856725e65/2020-06-14T19:35:50.234439Z], OS[Linux/3.10.0-1160.80.1.el7.x86_64/amd64], JVM[Red Hat, Inc./OpenJDK 64-Bit Server VM/1.8.0_352/25.352-b08]
+[2023-01-17T14:02:01,240][INFO ][o.e.n.Node               ] [data1] JVM home [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre]
+[2023-01-17T14:02:01,241][INFO ][o.e.n.Node               ] [data1] JVM arguments [-Xshare:auto, -Des.networkaddress.cache.ttl=60, -Des.networkaddress.cache.negative.ttl=10, -XX:+AlwaysPreTouch, -Xss1m, -Djava.awt.headless=true, -Dfile.encoding=UTF-8, -Djna.nosys=true, -XX:-OmitStackTraceInFastThrow, -Dio.netty.noUnsafe=true, -Dio.netty.noKeySetOptimization=true, -Dio.netty.recycler.maxCapacityPerThread=0, -Dio.netty.allocator.numDirectArenas=0, -Dlog4j.shutdownHookEnabled=false, -Dlog4j2.disable.jmx=true, -Djava.locale.providers=SPI,JRE, -Xms1g, -Xmx1g, -XX:+UseConcMarkSweepGC, -XX:CMSInitiatingOccupancyFraction=75, -XX:+UseCMSInitiatingOccupancyOnly, -Djava.io.tmpdir=/tmp/elasticsearch-2543675294899984835, -XX:+HeapDumpOnOutOfMemoryError, -XX:HeapDumpPath=data, -XX:ErrorFile=logs/hs_err_pid%p.log, -XX:+PrintGCDetails, -XX:+PrintGCDateStamps, -XX:+PrintTenuringDistribution, -XX:+PrintGCApplicationStoppedTime, -Xloggc:logs/gc.log, -XX:+UseGCLogFileRotation, -XX:NumberOfGCLogFiles=32, -XX:GCLogFileSize=64m, -XX:MaxDirectMemorySize=536870912, -Des.path.home=/usr/local/elasticsearch, -Des.path.conf=/usr/local/elasticsearch/config, -Des.distribution.flavor=default, -Des.distribution.type=tar, -Des.bundled_jdk=true]
+[2023-01-17T14:02:05,677][INFO ][o.e.p.PluginsService     ] [data1] loaded module [aggs-matrix-stats]
+[2023-01-17T14:02:05,677][INFO ][o.e.p.PluginsService     ] [data1] loaded module [analysis-common]
+[2023-01-17T14:02:05,678][INFO ][o.e.p.PluginsService     ] [data1] loaded module [constant-keyword]
+[2023-01-17T14:02:05,679][INFO ][o.e.p.PluginsService     ] [data1] loaded module [flattened]
+[2023-01-17T14:02:05,679][INFO ][o.e.p.PluginsService     ] [data1] loaded module [frozen-indices]
+[2023-01-17T14:02:05,680][INFO ][o.e.p.PluginsService     ] [data1] loaded module [ingest-common]
+[2023-01-17T14:02:05,681][INFO ][o.e.p.PluginsService     ] [data1] loaded module [ingest-geoip]
+[2023-01-17T14:02:05,681][INFO ][o.e.p.PluginsService     ] [data1] loaded module [ingest-user-agent]
+[2023-01-17T14:02:05,682][INFO ][o.e.p.PluginsService     ] [data1] loaded module [kibana]
+[2023-01-17T14:02:05,682][INFO ][o.e.p.PluginsService     ] [data1] loaded module [lang-expression]
+[2023-01-17T14:02:05,683][INFO ][o.e.p.PluginsService     ] [data1] loaded module [lang-mustache]
+[2023-01-17T14:02:05,684][INFO ][o.e.p.PluginsService     ] [data1] loaded module [lang-painless]
+[2023-01-17T14:02:05,684][INFO ][o.e.p.PluginsService     ] [data1] loaded module [mapper-extras]
+[2023-01-17T14:02:05,685][INFO ][o.e.p.PluginsService     ] [data1] loaded module [parent-join]
+[2023-01-17T14:02:05,686][INFO ][o.e.p.PluginsService     ] [data1] loaded module [percolator]
+[2023-01-17T14:02:05,686][INFO ][o.e.p.PluginsService     ] [data1] loaded module [rank-eval]
+[2023-01-17T14:02:05,687][INFO ][o.e.p.PluginsService     ] [data1] loaded module [reindex]
+[2023-01-17T14:02:05,688][INFO ][o.e.p.PluginsService     ] [data1] loaded module [repository-url]
+[2023-01-17T14:02:05,689][INFO ][o.e.p.PluginsService     ] [data1] loaded module [search-business-rules]
+[2023-01-17T14:02:05,690][INFO ][o.e.p.PluginsService     ] [data1] loaded module [searchable-snapshots]
+[2023-01-17T14:02:05,691][INFO ][o.e.p.PluginsService     ] [data1] loaded module [spatial]
+[2023-01-17T14:02:05,691][INFO ][o.e.p.PluginsService     ] [data1] loaded module [tasks]
+[2023-01-17T14:02:05,692][INFO ][o.e.p.PluginsService     ] [data1] loaded module [transform]
+[2023-01-17T14:02:05,692][INFO ][o.e.p.PluginsService     ] [data1] loaded module [transport-netty4]
+[2023-01-17T14:02:05,693][INFO ][o.e.p.PluginsService     ] [data1] loaded module [vectors]
+[2023-01-17T14:02:05,694][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-analytics]
+[2023-01-17T14:02:05,694][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-async-search]
+[2023-01-17T14:02:05,695][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-autoscaling]
+[2023-01-17T14:02:05,695][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-ccr]
+[2023-01-17T14:02:05,696][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-core]
+[2023-01-17T14:02:05,696][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-deprecation]
+[2023-01-17T14:02:05,697][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-enrich]
+[2023-01-17T14:02:05,697][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-eql]
+[2023-01-17T14:02:05,698][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-graph]
+[2023-01-17T14:02:05,698][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-identity-provider]
+[2023-01-17T14:02:05,699][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-ilm]
+[2023-01-17T14:02:05,699][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-logstash]
+[2023-01-17T14:02:05,708][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-ml]
+[2023-01-17T14:02:05,709][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-monitoring]
+[2023-01-17T14:02:05,709][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-ql]
+[2023-01-17T14:02:05,710][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-rollup]
+[2023-01-17T14:02:05,710][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-security]
+[2023-01-17T14:02:05,711][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-sql]
+[2023-01-17T14:02:05,711][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-voting-only-node]
+[2023-01-17T14:02:05,712][INFO ][o.e.p.PluginsService     ] [data1] loaded module [x-pack-watcher]
+[2023-01-17T14:02:05,713][INFO ][o.e.p.PluginsService     ] [data1] no plugins loaded
+[2023-01-17T14:02:05,845][INFO ][o.e.e.NodeEnvironment    ] [data1] using [1] data paths, mounts [[/ (/dev/mapper/centos-root)]], net usable_space [12.4gb], net total_space [21.6gb], types [xfs]
+[2023-01-17T14:02:05,846][INFO ][o.e.e.NodeEnvironment    ] [data1] heap size [1007.3mb], compressed ordinary object pointers [true]
+[2023-01-17T14:02:05,947][INFO ][o.e.n.Node               ] [data1] node name [data1], node ID [qXiMjOjBRlq2ArVEKG8uuw], cluster name [mycluster]
+[2023-01-17T14:02:15,873][INFO ][o.e.x.s.a.s.FileRolesStore] [data1] parsed [0] roles from file [/usr/local/elasticsearch/config/roles.yml]
+[2023-01-17T14:02:17,512][INFO ][o.e.x.m.p.l.CppLogMessageHandler] [data1] [controller/3145] [Main.cc@110] controller (64 bit): Version 7.8.0 (Build 58ff6912e20047) Copyright (c) 2020 Elasticsearch BV
+[2023-01-17T14:02:19,024][INFO ][o.e.d.DiscoveryModule    ] [data1] using discovery type [zen] and seed hosts providers [settings]
+[2023-01-17T14:02:21,204][INFO ][o.e.n.Node               ] [data1] initialized
+[2023-01-17T14:02:21,205][INFO ][o.e.n.Node               ] [data1] starting ...
+[2023-01-17T14:02:21,421][INFO ][o.e.t.TransportService   ] [data1] publish_address {c2/192.168.56.104:9300}, bound_addresses {192.168.56.104:9300}
+[2023-01-17T14:02:21,702][INFO ][o.e.b.BootstrapChecks    ] [data1] bound or publishing to a non-loopback address, enforcing bootstrap checks
+[2023-01-17T14:02:22,288][INFO ][o.e.c.s.ClusterApplierService] [data1] master node changed {previous [], current [{master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}]}, added {{master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}, term: 1, version: 28, reason: ApplyCommitRequest{term=1, version=28, sourceNode={master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}
+[2023-01-17T14:02:22,559][INFO ][o.e.x.s.a.TokenService   ] [data1] refresh keys
+[2023-01-17T14:02:23,075][INFO ][o.e.x.s.a.TokenService   ] [data1] refreshed keys
+[2023-01-17T14:02:23,230][INFO ][o.e.l.LicenseService     ] [data1] license [3ca7c4e6-d631-4e9d-befb-8669d01cac87] mode [basic] - valid
+[2023-01-17T14:02:23,235][INFO ][o.e.x.s.s.SecurityStatusChangeListener] [data1] Active license is now [BASIC]; Security is disabled
+[2023-01-17T14:02:23,384][INFO ][o.e.h.AbstractHttpServerTransport] [data1] publish_address {c2/192.168.56.104:9200}, bound_addresses {192.168.56.104:9200}
+[2023-01-17T14:02:23,386][INFO ][o.e.n.Node               ] [data1] started
+[2023-01-17T14:02:40,479][INFO ][o.e.c.s.ClusterApplierService] [data1] added {{data2}{cmX46vmdTlqStOof5ZzvwA}{BUdXVmdNQ1SzEtK3KZpaEQ}{c3}{192.168.56.105:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}, term: 1, version: 29, reason: ApplyCommitRequest{term=1, version=29, sourceNode={master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}
+
+

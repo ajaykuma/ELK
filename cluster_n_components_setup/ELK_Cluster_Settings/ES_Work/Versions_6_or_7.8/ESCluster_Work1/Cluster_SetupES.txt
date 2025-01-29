@@ -1,0 +1,203 @@
+#Setup atleast 3 nodes (say hostnames:c1,c2,c3 (centos7.x)
+#Make sure they can ping each other, Java is installated,ssh each other (passwordless) for root user and dedicated user(say hdu)
+#Make sure firewalld is turned off /allow connection to each other
+
+======================
+#Steps for node1,node2,node3
+#kibana unpacking can be done on one of the node
+
+#Download the following(from elasticsearch web) on node
+
+[hdu@c1 ~]$ ls /home/hdu/Downloads/
+elasticsearch-7.8.0-linux-x86_64.tar.gz
+elasticsearch-8.4.0-linux-x86_64.tar.gz
+kibana-7.8.0-linux-x86_64.tar.gz
+kibana-8.4.0-linux-x86_64.tar.gz
+logstash-7.8.0.tar.gz
+logstash-8.4.0-linux-x86_64.tar.gz
+
+#note kibana steps can be done only on one machine..
+
+#Login as root
+sudo su
+
+#change path to /usr/local
+cd /usr/local
+
+#untar elasticsearch and kibana for now
+tar -xvf /home/hdu/Downloads/elasticsearch-7.8.0-linux-x86_64.tar.gz
+tar -xvf /home/hdu/Downloads/kibana-7.8.0-linux-x86_64.tar.gz
+
+#create softlinks pointing to desired version to work on (for ex: to elasticsearch-7.8 and kibana-7.8)
+ln -s elasticsearch-7.8.0 elasticsearch
+ln -s kibana-7.8.0-linux-x86-64 kibana
+
+#Note** later we can unlink and make our links pointing to newer versions
+
+#change ownership to hdu user
+chown -R hdu:hdu elasticsearch*
+chown -R hdu:hdu kibana*
+
+#now our path to elasticsearch is /usr/local/elasticsearch
+#now our path to kibana is /usr/local/kibana
+
+#change back to hdu user
+su - hdu
+
+#update .bashrc for hdu user
+vi .bashrc
+
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/
+export PATH=$PATH:$JAVA_HOME/bin
+export ELASTICSEARCH_HOME=/usr/local/elasticsearch
+export PATH=$PATH:$ELASTICSEARCH_HOME/bin
+export KIBANA_HOME=/usr/local/kibana
+export PATH=$PATH:$KIBANA_HOME/bin
+
+source .bashrc
+
+=================================
+Editing config files: (Config files ie elasticsearch.yml as should 
+exist on each node is given under ImpConfigs folder)
+
+#To setup cluster
+update /usr/local/elasticsearch/config/elasticsearch.yml in each node
+
+Note**
+Making 1 node as master eligible and 2 nodes as data eligible, below configs should be good
+To have all 3 nodes as master and data eligible, refer configs in 'MyConfigsES' folder.
+
+####ON MASTER NODE#####
+#on node1(c1)
+
+cluster.name: mycluster
+node.name: master
+#which network interfaces ES binds to
+network.host:ipaddress of node1 (by default set to _local_)
+             (we can set to an array (_local_,_site_)
+#2 ports: 9300-Transport network how ES talks to other nodes in cluster
+          9200-REST API or HTTP end point
+
+http.port: 9200
+transport.port: 9300
+
+#add 2 more properties
+node.master: true
+node.data: false
+
+#discovery.zen.ping.unicast.hosts:["ipaddress of master"]
+#the below setting tells how many master nodes must exist for the cluster,in order to avoid 
+#split-brain
+#discovery.zen.minimum_master_nodes: set majority quorum value(for now we can set to 1)
+
+cluster.initial_master_nodes:
+  - master
+
+######ON DATANODES#####
+#on node2(c2)
+cluster.name: mycluster
+node.name: data1
+
+#which network interfaces ES binds to
+network.host:ipaddress of node2 (by default set to _local_)
+             (we can set to an array [_local_,_site_]
+#2 ports: 9300-Transport network how ES talks to other nodes in cluster
+          9200-REST API or HTTP end point
+http.port: 9200
+transport.port: 9300
+
+#add 2 more properties
+node.master: false
+node.data: true
+
+#discovery settings
+--an Array of nodes to which this node can connect to ,to get information about cluster.
+--typically best practise to list all master eligible nodes here
+discovery.zen.ping.unicast.hosts:["ipaddress of master"]
+#the below setting tells how many master nodes must exist for the cluster,in order to avoid split-brain
+discovery.zen.minimum_master_nodes: set majority quorum value(for now we can set to 1)
+
+#######ON OTHER DATANODES#####
+(SAME CONFIG AS NODE 2 with two changes)
+network.host: ipaddress of node3
+node.name: data2
+
+Note** Before starting elasticsearch or enabling elasticsearch on boot,refer "setup_errors.txt" file
+#once important configurations have been done
+
+The reference files ie 'limits.conf' and 'sysctl.conf' are provided in this path
+https://github.com/ajaykuma/hdu/tree/master/cluster_setup
+
+Copy these to respective locations (you may have to use root/sudo)
+Node1: (while being on c1 and assuming the git repo was downloaded and unzipped here)
+sudo cp <unzipped-folder-of-git-repo>/cluster_setup/limits.conf /etc/security/
+sudo cp <unzipped-folder-of-git-repo>/cluster_setup/sysctl.conf /etc/   
+
+From Node1 to Node2: (while being on Node1 i.e. c1)
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/limits.conf hdu@c2:/etc/security/
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/sysctl.conf hdu@c2:/etc/ 
+
+--if above steps don't work--
+--then copy to /tmp first
+
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/limits.conf hdu@c2:/tmp
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/sysctl.conf hdu@c2:/tmp
+
+ssh c2
+on c2 now:
+sudo cp /tmp/limits.conf /etc/security/
+sudo cp /tmp/sysctl.conf /etc/
+
+<logout>
+<back to c1>
+
+From Node1 to Node3: (while being on Node1 i.e. c1)
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/limits.conf hdu@c3:/etc/security/
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/sysctl.conf hdu@c3:/etc/ 
+
+--if above steps don't work--
+--then copy to /tmp first
+
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/limits.conf hdu@c3:/tmp
+c1$sudo scp <unzipped-folder-of-git-repo>/cluster_setup/sysctl.conf hdu@c3:/tmp
+
+ssh c3
+on c3 now:
+sudo cp /tmp/limits.conf /etc/security/
+sudo cp /tmp/sysctl.conf /etc/
+
+Note** Remember to change the username from hdu to <your username> in the limits.conf file
+<logout>
+<back to c1>
+
+<-------------RESTART YOUR MACHINES--------------------->
+
+
+on node1:
+[hdu@c1 ~]$elasticsearch<enter>
+
+on node2:
+[hdu@c2 ~]$elasticsearch<enter>
+
+on node3:
+[hdu@c3 ~]$elasticsearch<enter>
+
+
+#Test the status
+$curl c1:9200/_cat/nodes
+$curl c1:9200/_cat/nodes?v
+
+[hdu@c1 ~]$ curl c1:9200/_cat/nodes?v
+ip             heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+192.168.251.49           17          43   5    0.12    0.36     0.23 di        -      data2
+192.168.251.47           15          43   1    0.40    0.50     0.30 mi        *      master
+192.168.251.48           16          43   6    0.12    0.39     0.25 di        -      data1
+
+#optional----
+
+refer:
+node1startup.log
+node2startup.log
+node3startup.log
+
+

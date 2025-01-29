@@ -1,0 +1,108 @@
+--
+future versions of Elasticsearch will require Java 11; your Java version from [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre] does not meet this requirement
+future versions of Elasticsearch will require Java 11; your Java version from [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre] does not meet this requirement
+[2023-01-17T14:01:31,174][INFO ][o.e.n.Node               ] [master] version[7.8.0], pid[3155], build[default/tar/757314695644ea9a1dc2fecd26d1a43856725e65/2020-06-14T19:35:50.234439Z], OS[Linux/3.10.0-1160.80.1.el7.x86_64/amd64], JVM[Red Hat, Inc./OpenJDK 64-Bit Server VM/1.8.0_352/25.352-b08]
+[2023-01-17T14:01:31,176][INFO ][o.e.n.Node               ] [master] JVM home [/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.352.b08-2.el7_9.x86_64/jre]
+[2023-01-17T14:01:31,176][INFO ][o.e.n.Node               ] [master] JVM arguments [-Xshare:auto, -Des.networkaddress.cache.ttl=60, -Des.networkaddress.cache.negative.ttl=10, -XX:+AlwaysPreTouch, -Xss1m, -Djava.awt.headless=true, -Dfile.encoding=UTF-8, -Djna.nosys=true, -XX:-OmitStackTraceInFastThrow, -Dio.netty.noUnsafe=true, -Dio.netty.noKeySetOptimization=true, -Dio.netty.recycler.maxCapacityPerThread=0, -Dio.netty.allocator.numDirectArenas=0, -Dlog4j.shutdownHookEnabled=false, -Dlog4j2.disable.jmx=true, -Djava.locale.providers=SPI,JRE, -Xms1g, -Xmx1g, -XX:+UseConcMarkSweepGC, -XX:CMSInitiatingOccupancyFraction=75, -XX:+UseCMSInitiatingOccupancyOnly, -Djava.io.tmpdir=/tmp/elasticsearch-4079945540229990331, -XX:+HeapDumpOnOutOfMemoryError, -XX:HeapDumpPath=data, -XX:ErrorFile=logs/hs_err_pid%p.log, -XX:+PrintGCDetails, -XX:+PrintGCDateStamps, -XX:+PrintTenuringDistribution, -XX:+PrintGCApplicationStoppedTime, -Xloggc:logs/gc.log, -XX:+UseGCLogFileRotation, -XX:NumberOfGCLogFiles=32, -XX:GCLogFileSize=64m, -XX:MaxDirectMemorySize=536870912, -Des.path.home=/usr/local/elasticsearch, -Des.path.conf=/usr/local/elasticsearch/config, -Des.distribution.flavor=default, -Des.distribution.type=tar, -Des.bundled_jdk=true]
+[2023-01-17T14:01:35,357][INFO ][o.e.p.PluginsService     ] [master] loaded module [aggs-matrix-stats]
+[2023-01-17T14:01:35,357][INFO ][o.e.p.PluginsService     ] [master] loaded module [analysis-common]
+[2023-01-17T14:01:35,358][INFO ][o.e.p.PluginsService     ] [master] loaded module [constant-keyword]
+[2023-01-17T14:01:35,358][INFO ][o.e.p.PluginsService     ] [master] loaded module [flattened]
+[2023-01-17T14:01:35,358][INFO ][o.e.p.PluginsService     ] [master] loaded module [frozen-indices]
+[2023-01-17T14:01:35,359][INFO ][o.e.p.PluginsService     ] [master] loaded module [ingest-common]
+[2023-01-17T14:01:35,359][INFO ][o.e.p.PluginsService     ] [master] loaded module [ingest-geoip]
+[2023-01-17T14:01:35,359][INFO ][o.e.p.PluginsService     ] [master] loaded module [ingest-user-agent]
+[2023-01-17T14:01:35,359][INFO ][o.e.p.PluginsService     ] [master] loaded module [kibana]
+[2023-01-17T14:01:35,359][INFO ][o.e.p.PluginsService     ] [master] loaded module [lang-expression]
+[2023-01-17T14:01:35,360][INFO ][o.e.p.PluginsService     ] [master] loaded module [lang-mustache]
+[2023-01-17T14:01:35,360][INFO ][o.e.p.PluginsService     ] [master] loaded module [lang-painless]
+[2023-01-17T14:01:35,360][INFO ][o.e.p.PluginsService     ] [master] loaded module [mapper-extras]
+[2023-01-17T14:01:35,361][INFO ][o.e.p.PluginsService     ] [master] loaded module [parent-join]
+[2023-01-17T14:01:35,361][INFO ][o.e.p.PluginsService     ] [master] loaded module [percolator]
+[2023-01-17T14:01:35,362][INFO ][o.e.p.PluginsService     ] [master] loaded module [rank-eval]
+[2023-01-17T14:01:35,362][INFO ][o.e.p.PluginsService     ] [master] loaded module [reindex]
+[2023-01-17T14:01:35,362][INFO ][o.e.p.PluginsService     ] [master] loaded module [repository-url]
+[2023-01-17T14:01:35,362][INFO ][o.e.p.PluginsService     ] [master] loaded module [search-business-rules]
+[2023-01-17T14:01:35,363][INFO ][o.e.p.PluginsService     ] [master] loaded module [searchable-snapshots]
+[2023-01-17T14:01:35,363][INFO ][o.e.p.PluginsService     ] [master] loaded module [spatial]
+[2023-01-17T14:01:35,363][INFO ][o.e.p.PluginsService     ] [master] loaded module [tasks]
+[2023-01-17T14:01:35,363][INFO ][o.e.p.PluginsService     ] [master] loaded module [transform]
+[2023-01-17T14:01:35,364][INFO ][o.e.p.PluginsService     ] [master] loaded module [transport-netty4]
+[2023-01-17T14:01:35,364][INFO ][o.e.p.PluginsService     ] [master] loaded module [vectors]
+[2023-01-17T14:01:35,364][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-analytics]
+[2023-01-17T14:01:35,364][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-async-search]
+[2023-01-17T14:01:35,364][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-autoscaling]
+[2023-01-17T14:01:35,365][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-ccr]
+[2023-01-17T14:01:35,365][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-core]
+[2023-01-17T14:01:35,365][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-deprecation]
+[2023-01-17T14:01:35,366][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-enrich]
+[2023-01-17T14:01:35,366][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-eql]
+[2023-01-17T14:01:35,366][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-graph]
+[2023-01-17T14:01:35,366][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-identity-provider]
+[2023-01-17T14:01:35,367][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-ilm]
+[2023-01-17T14:01:35,367][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-logstash]
+[2023-01-17T14:01:35,367][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-ml]
+[2023-01-17T14:01:35,371][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-monitoring]
+[2023-01-17T14:01:35,372][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-ql]
+[2023-01-17T14:01:35,372][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-rollup]
+[2023-01-17T14:01:35,372][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-security]
+[2023-01-17T14:01:35,372][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-sql]
+[2023-01-17T14:01:35,372][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-voting-only-node]
+[2023-01-17T14:01:35,373][INFO ][o.e.p.PluginsService     ] [master] loaded module [x-pack-watcher]
+[2023-01-17T14:01:35,373][INFO ][o.e.p.PluginsService     ] [master] no plugins loaded
+[2023-01-17T14:01:35,473][INFO ][o.e.e.NodeEnvironment    ] [master] using [1] data paths, mounts [[/ (/dev/mapper/centos-root)]], net usable_space [12.6gb], net total_space [21.6gb], types [xfs]
+[2023-01-17T14:01:35,473][INFO ][o.e.e.NodeEnvironment    ] [master] heap size [1007.3mb], compressed ordinary object pointers [true]
+[2023-01-17T14:01:35,592][INFO ][o.e.n.Node               ] [master] node name [master], node ID [jrQ01JgmQ9WzVGF6VM1QcA], cluster name [mycluster]
+[2023-01-17T14:01:42,731][INFO ][o.e.x.s.a.s.FileRolesStore] [master] parsed [0] roles from file [/usr/local/elasticsearch/config/roles.yml]
+[2023-01-17T14:01:44,856][INFO ][o.e.x.m.p.l.CppLogMessageHandler] [master] [controller/3292] [Main.cc@110] controller (64 bit): Version 7.8.0 (Build 58ff6912e20047) Copyright (c) 2020 Elasticsearch BV
+[2023-01-17T14:01:45,831][INFO ][o.e.d.DiscoveryModule    ] [master] using discovery type [zen] and seed hosts providers [settings]
+[2023-01-17T14:01:47,517][INFO ][o.e.n.Node               ] [master] initialized
+[2023-01-17T14:01:47,517][INFO ][o.e.n.Node               ] [master] starting ...
+[2023-01-17T14:01:47,696][INFO ][o.e.t.TransportService   ] [master] publish_address {c1/192.168.56.102:9300}, bound_addresses {192.168.56.102:9300}
+[2023-01-17T14:01:47,889][INFO ][o.e.b.BootstrapChecks    ] [master] bound or publishing to a non-loopback address, enforcing bootstrap checks
+[2023-01-17T14:01:47,900][INFO ][o.e.c.c.Coordinator      ] [master] setting initial configuration to VotingConfiguration{jrQ01JgmQ9WzVGF6VM1QcA}
+[2023-01-17T14:01:48,084][INFO ][o.e.c.s.MasterService    ] [master] elected-as-master ([1] nodes joined)[{master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, xpack.installed=true, transform.node=true, ml.max_open_jobs=20} elect leader, _BECOME_MASTER_TASK_, _FINISH_ELECTION_], term: 1, version: 1, delta: master node changed {previous [], current [{master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, xpack.installed=true, transform.node=true, ml.max_open_jobs=20}]}
+[2023-01-17T14:01:48,158][INFO ][o.e.c.c.CoordinationState] [master] cluster UUID set to [wDNwGpCrSA2oROdDlx0ruA]
+[2023-01-17T14:01:48,227][INFO ][o.e.c.s.ClusterApplierService] [master] master node changed {previous [], current [{master}{jrQ01JgmQ9WzVGF6VM1QcA}{DuF6BiCeTcC_QD3JOTUQkg}{c1}{192.168.56.102:9300}{dilmrt}{ml.machine_memory=5727424512, xpack.installed=true, transform.node=true, ml.max_open_jobs=20}]}, term: 1, version: 1, reason: Publication{term=1, version=1}
+[2023-01-17T14:01:48,337][INFO ][o.e.h.AbstractHttpServerTransport] [master] publish_address {c1/192.168.56.102:9200}, bound_addresses {192.168.56.102:9200}
+[2023-01-17T14:01:48,338][INFO ][o.e.n.Node               ] [master] started
+[2023-01-17T14:01:48,347][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.watch-history-11] for [watcher], because it doesn't exist
+[2023-01-17T14:01:48,357][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.triggered_watches] for [watcher], because it doesn't exist
+[2023-01-17T14:01:48,357][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.watches] for [watcher], because it doesn't exist
+[2023-01-17T14:01:48,390][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-anomalies-] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,390][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-state] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,391][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-config] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,391][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-inference-000002] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,391][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-meta] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,420][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-notifications-000001] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,420][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.ml-stats] for [ml], because it doesn't exist
+[2023-01-17T14:01:48,423][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [ilm-history] for [index_lifecycle], because it doesn't exist
+[2023-01-17T14:01:48,449][INFO ][o.e.x.c.t.IndexTemplateRegistry] [master] adding index template [.slm-history] for [index_lifecycle], because it doesn't exist
+[2023-01-17T14:01:48,547][INFO ][o.e.g.GatewayService     ] [master] recovered [0] indices into cluster_state
+[2023-01-17T14:01:49,339][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.watch-history-11] for index patterns [.watcher-history-11*]
+[2023-01-17T14:01:49,485][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.watches] for index patterns [.watches*]
+[2023-01-17T14:01:49,567][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.triggered_watches] for index patterns [.triggered_watches*]
+[2023-01-17T14:01:49,707][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-state] for index patterns [.ml-state*]
+[2023-01-17T14:01:49,849][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-config] for index patterns [.ml-config]
+[2023-01-17T14:01:49,946][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-inference-000002] for index patterns [.ml-inference-000002]
+[2023-01-17T14:01:50,096][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-anomalies-] for index patterns [.ml-anomalies-*]
+[2023-01-17T14:01:50,219][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-notifications-000001] for index patterns [.ml-notifications-000001]
+[2023-01-17T14:01:50,269][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-stats] for index patterns [.ml-stats-*]
+[2023-01-17T14:01:50,365][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.ml-meta] for index patterns [.ml-meta]
+[2023-01-17T14:01:50,416][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [ilm-history] for index patterns [ilm-history-2*]
+[2023-01-17T14:01:50,487][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.slm-history] for index patterns [.slm-history-2*]
+[2023-01-17T14:01:50,527][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.monitoring-logstash] for index patterns [.monitoring-logstash-7-*]
+[2023-01-17T14:01:50,604][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.monitoring-es] for index patterns [.monitoring-es-7-*]
+[2023-01-17T14:01:50,672][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.monitoring-beats] for index patterns [.monitoring-beats-7-*]
+[2023-01-17T14:01:50,720][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.monitoring-alerts-7] for index patterns [.monitoring-alerts-7]
+[2023-01-17T14:01:50,769][INFO ][o.e.c.m.MetadataIndexTemplateService] [master] adding template [.monitoring-kibana] for index patterns [.monitoring-kibana-7-*]
+[2023-01-17T14:01:50,805][INFO ][o.e.x.i.a.TransportPutLifecycleAction] [master] adding index lifecycle policy [watch-history-ilm-policy]
+[2023-01-17T14:01:50,845][INFO ][o.e.x.i.a.TransportPutLifecycleAction] [master] adding index lifecycle policy [ml-size-based-ilm-policy]
+[2023-01-17T14:01:50,972][INFO ][o.e.l.LicenseService     ] [master] license [3ca7c4e6-d631-4e9d-befb-8669d01cac87] mode [basic] - valid
+[2023-01-17T14:01:50,973][INFO ][o.e.x.s.s.SecurityStatusChangeListener] [master] Active license is now [BASIC]; Security is disabled
+[2023-01-17T14:01:50,977][INFO ][o.e.x.i.a.TransportPutLifecycleAction] [master] adding index lifecycle policy [ilm-history-ilm-policy]
+[2023-01-17T14:01:51,011][INFO ][o.e.x.i.a.TransportPutLifecycleAction] [master] adding index lifecycle policy [slm-history-ilm-policy]
+[2023-01-17T14:02:22,118][INFO ][o.e.c.s.MasterService    ] [master] node-join[{data1}{qXiMjOjBRlq2ArVEKG8uuw}{-toBy2m_Q92v2M5xorc6ig}{c2}{192.168.56.104:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true} join existing leader], term: 1, version: 28, delta: added {{data1}{qXiMjOjBRlq2ArVEKG8uuw}{-toBy2m_Q92v2M5xorc6ig}{c2}{192.168.56.104:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}
+[2023-01-17T14:02:23,377][INFO ][o.e.c.s.ClusterApplierService] [master] added {{data1}{qXiMjOjBRlq2ArVEKG8uuw}{-toBy2m_Q92v2M5xorc6ig}{c2}{192.168.56.104:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}, term: 1, version: 28, reason: Publication{term=1, version=28}
+[2023-01-17T14:02:40,440][INFO ][o.e.c.s.MasterService    ] [master] node-join[{data2}{cmX46vmdTlqStOof5ZzvwA}{BUdXVmdNQ1SzEtK3KZpaEQ}{c3}{192.168.56.105:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true} join existing leader], term: 1, version: 29, delta: added {{data2}{cmX46vmdTlqStOof5ZzvwA}{BUdXVmdNQ1SzEtK3KZpaEQ}{c3}{192.168.56.105:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}
+[2023-01-17T14:02:42,793][INFO ][o.e.c.s.ClusterApplierService] [master] added {{data2}{cmX46vmdTlqStOof5ZzvwA}{BUdXVmdNQ1SzEtK3KZpaEQ}{c3}{192.168.56.105:9300}{dilmrt}{ml.machine_memory=5727424512, ml.max_open_jobs=20, xpack.installed=true, transform.node=true}}, term: 1, version: 29, reason: Publication{term=1, version=29}
