@@ -1,4 +1,5 @@
 # ELK
-ElasticSearch Logstash Kibana work
+Working with ELk Stack : ElasticSearch, Logstash, Kibana & other plugins.
+Soon, will also conains examples to work with AWS OpenSearch & OpenSearch Dashboards.
 
->>>> Content is being reviewed & updated
+> 🚧 This repository is currently being refined and improved. Stay tuned!
