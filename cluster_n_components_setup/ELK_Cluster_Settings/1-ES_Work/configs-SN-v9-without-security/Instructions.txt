@@ -1,0 +1,1 @@
+#Disable security and start nodes and Kibana
