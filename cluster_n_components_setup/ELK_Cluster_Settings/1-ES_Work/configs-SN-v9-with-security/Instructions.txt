@@ -1,12 +1,21 @@
 #Setup
-Options to disable security
-bin/elasticsearch-keystore remove xpack.security.transport.ssl.keystore.secure_password
-bin/elasticsearch-keystore remove xpack.security.transport.ssl.truststore.secure_password
-bin/elasticsearch-keystore remove xpack.security.http.ssl.keystore.secure_password
-or edit properties (mentioned below) to set security disabled
--------------------
 On Node1:
+
+lrwxrwxrwx  1 hdu  hdu         19 Oct  3 07:00 elasticsearch -> elasticsearch-9.0.0
+drwxr-xr-x 10 hdu  hdu       4096 Oct  3 16:05 elasticsearch-9.0.0
+
+--start elasticsearch
+--provided .bashrc is setup with 
+
+export ES_JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
+export PATH=$PATH:$ES_JAVA_HOME/bin
+export ELASTICSEARCH_HOME=/home/hdu/elasticsearch
+export PATH=$PATH:$ELASTICSEARCH_HOME/bin
+export KIBANA_HOME=/home/hdu/kibana
+export PATH=$PATH:$KIBANA_HOME/bin
+
 > elasticsearch
+<shows>
 ✅ Elasticsearch security features have been automatically configured!
 ✅ Authentication is enabled and cluster connections are encrypted.
 
@@ -47,7 +56,7 @@ xpack.security.transport.ssl:
   keystore.path: certs/transport.p12
   truststore.path: certs/transport.p12
 ----------------------------------
---on another node
+--on another node (Testing)
 hdu@es1:~$ curl -u elastic:peRqb9fiE24NZbe*dIRJ -XGET "https://localhost:9200/_cat/nodes?v" -k
 Here -k to allow insecure connection i.e. without cert
 
@@ -56,14 +65,18 @@ hdu@es1:~$ curl --cacert elasticsearch/config/certs/http_ca.crt https://localhos
 
 adding nodes
 on Node1:
-hdu@es1:~$ elasticsearch-create-enrollment-token -s node
-eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+--Generate token
+elasticsearch-create-enrollment-token -s node
+
 
 --start other nodes
+--cluster-configs2 contains configs to start another node using a different port
 ES_PATH_CONF=cluster-configs-2 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
 
+--cluster-configs3 contains configs to start another node using a different port
 ES_PATH_CONF=cluster-configs-3 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
 
+--check again
 hdu@es1:~$ curl -u elastic:peRqb9fiE24NZbe*dIRJ -XGET "https://localhost:9200/_cat/nodes?v" -k
 
 

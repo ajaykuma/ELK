@@ -1,1 +1,47 @@
 #Disable security and start nodes and Kibana
+#Setup
+On Node1:
+
+lrwxrwxrwx  1 hdu  hdu         19 Oct  3 07:00 elasticsearch -> elasticsearch-9.0.0
+drwxr-xr-x 10 hdu  hdu       4096 Oct  3 16:05 elasticsearch-9.0.0
+
+--start elasticsearch
+--provided .bashrc is setup with
+
+export ES_JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
+export PATH=$PATH:$ES_JAVA_HOME/bin
+export ELASTICSEARCH_HOME=/home/hdu/elasticsearch
+export PATH=$PATH:$ELASTICSEARCH_HOME/bin
+export KIBANA_HOME=/home/hdu/kibana
+export PATH=$PATH:$KIBANA_HOME/bin
+
+For Node2 and Node2:
+/home/hdu/cluster-configs-2/elasticsearch.yml
+/home/hdu/cluster-configs-3/elasticsearch.yml
+
+--on each node disable security
+
+# Enable security features
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+
+# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
+xpack.security.http.ssl:
+  enabled: false
+  #keystore.path: certs/http.p12
+
+# Enable encryption and mutual authentication between cluster nodes
+xpack.security.transport.ssl:
+  enabled: false
+  #verification_mode: certificate
+  #keystore.path: certs/transport.p12
+  #truststore.path: certs/transport.p12
+
+--on Node1
+--For Node1
+> elasticsearch
+--For Node2
+> ES_PATH_CONF=cluster-configs-2 elasticsearch
+--For Node3
+> ES_PATH_CONF=cluster-configs-3 elasticsearch
+

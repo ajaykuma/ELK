@@ -1,5 +1,3 @@
-Refer : 'Cluster_SetupES.txt' SETUP SECTION >
-         from > ELK\cluster_n_components_setup\ELK_Cluster_Settings\ES_Work\Versions_6_or_7.8\ESCluster_Work1
 
 #Setting up a ES on a single node, however 3 instances running on different ports
 
@@ -36,7 +34,5 @@ curl localhost:9201/_cat/nodes?v
 OR
 curl localhost:9202/_cat/nodes?v
 
-==============
-Steps when using newer version (by default having security enabled)
 
 
