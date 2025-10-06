@@ -1,0 +1,70 @@
+Options to disable security
+bin/elasticsearch-keystore remove xpack.security.transport.ssl.keystore.secure_password
+bin/elasticsearch-keystore remove xpack.security.transport.ssl.truststore.secure_password
+bin/elasticsearch-keystore remove xpack.security.http.ssl.keystore.secure_password
+or edit properties to set security disabled
+-------------------
+On Node1:
+> elasticsearch
+✅ Elasticsearch security features have been automatically configured!
+✅ Authentication is enabled and cluster connections are encrypted.
+
+ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+  peRqb9fiE24NZbe*dIRJ
+
+ℹ️  HTTP CA certificate SHA-256 fingerprint:
+  91b90087b5019cd1418eca7c3aec90e958d3b40dcefc3080dd3b93cb7a8c7905
+
+ℹ️  Configure Kibana to use this cluster:
+• Run Kibana and click the configuration link in the terminal when Kibana starts.
+• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlRrT1JxcGtCTzBMUkJzR1BPU1hEOkI0OFFIWGtMZ1Rxcng5aE9LOWU4ZUEifQ==
+
+ℹ️  Configure other nodes to join this cluster:
+• On this node:
+  ⁃ Create an enrollment token with `bin/elasticsearch-create-enrollment-token -s node`.
+  ⁃ Uncomment the transport.host setting at the end of config/elasticsearch.yml.
+  ⁃ Restart Elasticsearch.
+• On other nodes:
+  ⁃ Start Elasticsearch with `bin/elasticsearch --enrollment-token <token>`, using the enrollment token that you generated
+
+----------------------------
+then after starting elasticsearch, these properties are added to elasticsearch.yml
+# Enable security features
+xpack.security.enabled: true
+
+xpack.security.enrollment.enabled: true
+
+# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
+xpack.security.http.ssl:
+  enabled: true
+  keystore.path: certs/http.p12
+
+# Enable encryption and mutual authentication between cluster nodes
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  keystore.path: certs/transport.p12
+  truststore.path: certs/transport.p12
+----------------------------------
+--on another node
+hdu@es1:~$ curl -u elastic:peRqb9fiE24NZbe*dIRJ -XGET "https://localhost:9200/_cat/nodes?v" -k
+Here -k to allow insecure connection i.e. without cert
+
+OR
+hdu@es1:~$ curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:peRqb9fiE24NZbe*dIRJ
+
+adding nodes
+on Node1:
+hdu@es1:~$ elasticsearch-create-enrollment-token -s node
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+
+--start other nodes
+ES_PATH_CONF=cluster-configs-2 elasticsearch --enrollment-token <token>
+ES_PATH_CONF=cluster-configs-2 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+
+ES_PATH_CONF=cluster-configs-3 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+
+hdu@es1:~$ curl -u elastic:peRqb9fiE24NZbe*dIRJ -XGET "https://localhost:9200/_cat/nodes?v" -k
+Here -k to allow insecure connection i.e. without cert
+

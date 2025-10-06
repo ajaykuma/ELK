@@ -4,23 +4,32 @@
 --create a directory 'cluster-configs' in location, say /usr/local
 
 --for example
-[hdu@ch1 ~]$ sudo mkdir /usr/local/cluster-configs
-[hdu@ch1 ~]$ sudo chown -R hdu:hdu /usr/local/cluster-configs
+[hdu@es1 ~]$ sudo mkdir cluster-configs
+[hdu@es1 ~]$ sudo chown -R hdu:hdu cluster-configs
 
---copy the configs from <gitpath/cluster-configs' into /usr/local/cluster-configs
+--copy the configs from <gitpath/cluster-configs' into cluster-configs
 --for example
-[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node1/ /usr/local/cluster-configs/
-[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node2/ /usr/local/cluster-configs/
-[hdu@ch1 ~]$ cp -r Elk/ELK/cluster_n_components_setup/ES_Cluster-configs-SN/cluster-configs/Node3/ /usr/local/cluster-configs/
+cp -r elk/ELK/Cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/configs-SN-v7-without-security/cluster-configs/Node1/ cluster-configs/
+cp -r elk/ELK/Cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/configs-SN-v7-without-security/cluster-configs/Node2/ cluster-configs/
+cp -r elk/ELK/Cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/configs-SN-v7-without-security/cluster-configs/Node3/ cluster-configs/
 
 --notice the changes in elasticsearch.yml in Node1, Node2 & Node3
 --notice that jvm.options and log4j exists for each node along with elasticsearch.yml
---copy sysctl.conf and limits.conf from 
-  https://github.com/ajaykuma/ELK/tree/master/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1
 
-[hdu@ch1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1/limits.conf .
-[hdu@ch1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/ESCluster_Work1/sysctl.conf .
-[hdu@ch1 ~]$ ls
+--copy sysctl.conf and limits.conf from 
+  Cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/Versions_6_or_7.8/ESCluster_Work1
+
+[hdu@es1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/limits.conf .
+[hdu@es1 ~]$ cp Elk/ELK/cluster_n_components_setup/ELK_Cluster_Settings/ES_Work/Versions_6_or_7.8/sysctl.conf .
+[hdu@es1 ~]$ ls
+
+sudo cp limits.conf /etc/security/
+sudo cp sysctl.conf /etc/
+
+--make sure elasticsearch link points to elasticsearch-7
+hdu@es2:~$ sudo unlink elasticsearch
+hdu@es2:~$ sudo ln -s elasticsearch-7.17.25 elasticsearch
+hdu@es2:~$ sudo chown -R hdu:hdu elasticsearch*
 
 Start instances of Elasticsearch
 ES_PATH_CONF=/usr/local/cluster-configs/Node1 elasticsearch
@@ -34,5 +43,7 @@ curl localhost:9201/_cat/nodes?v
 OR
 curl localhost:9202/_cat/nodes?v
 
+---
+use setup1.sh script
 
 

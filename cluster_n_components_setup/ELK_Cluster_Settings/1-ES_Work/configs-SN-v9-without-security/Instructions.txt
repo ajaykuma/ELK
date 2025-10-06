@@ -37,6 +37,19 @@ xpack.security.transport.ssl:
   #keystore.path: certs/transport.p12
   #truststore.path: certs/transport.p12
 
+also remove any certs or elasticsearch.keystore from
+rm -rf elasticsearch/config/certs
+rm -rf elasticsearch/config/elasticsearch.keystore
+
+cluster-configs-2/certs
+cluster-configs-2/elasticsearch.keystore
+
+cluster-configs-3/certs
+cluster-configs-3/elasticsearch.keystore
+
+---------------------------
+Starting..
+
 --on Node1
 --For Node1
 > elasticsearch
@@ -44,4 +57,8 @@ xpack.security.transport.ssl:
 > ES_PATH_CONF=cluster-configs-2 elasticsearch
 --For Node3
 > ES_PATH_CONF=cluster-configs-3 elasticsearch
+
+OR
+use setup2.sh script (provided all xpack-security properties are set to false)
+
 

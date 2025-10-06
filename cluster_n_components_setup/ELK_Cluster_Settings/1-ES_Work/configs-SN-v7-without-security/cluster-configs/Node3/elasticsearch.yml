@@ -34,11 +34,11 @@ node.name: node3
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /usr/local/cluster-configs/Node3/
+path.data: cluster-configs/Node3/data
 #
 # Path to log files:
 #
-path.logs: /usr/local/cluster-configs/Node3/
+path.logs: cluster-configs/Node3/logs
 #
 # ----------------------------------- Memory -----------------------------------
 #

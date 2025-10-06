@@ -16,21 +16,21 @@ export PATH=$PATH:$KIBANA_HOME/bin
 
 > elasticsearch
 <shows>
-✅ Elasticsearch security features have been automatically configured!
-✅ Authentication is enabled and cluster connections are encrypted.
+Elasticsearch security features have been automatically configured!
+Authentication is enabled and cluster connections are encrypted.
 
-ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
   peRqb9fiE24NZbe*dIRJ
 
-ℹ️  HTTP CA certificate SHA-256 fingerprint:
-  91b90087b5019cd1418eca7c3aec90e958d3b40dcefc3080dd3b93cb7a8c7905
+HTTP CA certificate SHA-256 fingerprint:
+  
 
-ℹ️  Configure Kibana to use this cluster:
+Configure Kibana to use this cluster:
 • Run Kibana and click the configuration link in the terminal when Kibana starts.
 • Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
-  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlRrT1JxcGtCTzBMUkJzR1BPU1hEOkI0OFFIWGtMZ1Rxcng5aE9LOWU4ZUEifQ==
+  
 
-ℹ️  Configure other nodes to join this cluster:
+Configure other nodes to join this cluster:
 • On this node:
   ⁃ Create an enrollment token with `bin/elasticsearch-create-enrollment-token -s node`.
   ⁃ Uncomment the transport.host setting at the end of config/elasticsearch.yml.
@@ -71,12 +71,56 @@ elasticsearch-create-enrollment-token -s node
 
 --start other nodes
 --cluster-configs2 contains configs to start another node using a different port
-ES_PATH_CONF=cluster-configs-2 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+ES_PATH_CONF=cluster-configs-2 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJh...
 
 --cluster-configs3 contains configs to start another node using a different port
-ES_PATH_CONF=cluster-configs-3 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTI3LjAuMC4xOjkyMDAiXSwiZmdyIjoiOTFiOTAwODdiNTAxOWNkMTQxOGVjYTdjM2FlYzkwZTk1OGQzYjQwZGNlZmMzMDgwZGQzYjkzY2I3YThjNzkwNSIsImtleSI6IlVrT1dxcGtCTzBMUkJzR1BsU1VhOjJuMWFTN2tfTk5oVTRYaHdVWmlENVEifQ==
+ES_PATH_CONF=cluster-configs-3 elasticsearch --enrollment-token eyJ2ZXIiOiI4LjE0LjAiLCJhZH...
 
 --check again
 hdu@es1:~$ curl -u elastic:peRqb9fiE24NZbe*dIRJ -XGET "https://localhost:9200/_cat/nodes?v" -k
+
+---------------------------
+Using setup scripts
+--make sure configs dont have security related settings enabled or
+if enabled then they are correct
+
+run
+./setup3.sh
+./setup4.sh
+elasticsearch-reset-password -u elastic
+<Y>
+Password for the [elastic] user successfully reset.
+New value: XHZKMQbjOWvmWRbSvXk5
+now using the pswd:
+curl -u elastic:XHZKMQbjOWvmWRbSvXk5 -XGET "https://localhost:9200/_cat/nodes?v" -k
+
+For kibana
+edit kibana/config/ibana.yml
+
+server.port: 5601
+server.host: "10.156.0.15" --or ipaddress of your machine
+server.name: "mykibana"
+elasticsearch.hosts: 
+  - http://localhost:9200
+
+--start kibana
+> kibana
+
+--use the provided the url in browser and replace the ip with external ip
+
+--now from terminal
+--generate token for kibana
+elasticsearch-create-enrollment-token -s kibana
+
+--paste this token in kibana 
+--let the setup complete
+
+--use 
+username: elastic
+pswd: as generated above..      
+
+
+
+
 
 
