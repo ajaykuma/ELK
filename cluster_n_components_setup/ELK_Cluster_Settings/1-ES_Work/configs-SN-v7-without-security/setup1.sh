@@ -29,7 +29,7 @@ done
 echo "Elasticsearch is up on 2nd node!"
 
 echo "Starting third node"
-ES_PATH_CONF=cluster-configs/Node1 elasticsearch > node3_nsec.log 2>&1 &
+ES_PATH_CONF=cluster-configs/Node3 elasticsearch > node3_nsec.log 2>&1 &
 
 until curl -s http://localhost:9202 >/dev/null 2>&1; do
   sleep 5
