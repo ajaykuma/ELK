@@ -1,0 +1,283 @@
+Dot net setup
+-------------
+sudo apt update
+sudo apt install dotnet-sdk-8.0 -y
+
+dotnet --version
+mkdir ElasticDot
+cd ElasticDot
+dotnet new console -n ElasticApp
+
+cd ElasticApp
+
+ls -all
+
+#Add the Elasticsearch .NET Client
+dotnet add package NEST
+
+--This automatically installs Elasticsearch.Net
+
+edit Program.cs
+
+hdu@es1:~/ElasticDot/ElasticApp$ vi Program.cs 
+using Nest;
+using System;
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public double Price { get; set; }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var settings = new ConnectionSettings(new Uri("http://localhost:9200"))
+            .DefaultIndex("products");
+
+        var client = new ElasticClient(settings);
+
+        // Test connection
+        var ping = client.Ping();
+        Console.WriteLine(ping.IsValid
+            ? "Connected to Elasticsearch!"
+            : $"Connection failed: {ping.OriginalException?.Message}");
+
+        // Index sample data
+        var product = new Product { Id = 1, Name = "Laptop", Price = 1299.99 };
+        var indexResponse = client.IndexDocument(product);
+        Console.WriteLine(indexResponse.IsValid
+            ? " Document indexed successfully!"
+            : $"Index failed: {indexResponse.DebugInformation}");
+
+        // Search
+        var searchResponse = client.Search<Product>(s => s
+            .Query(q => q
+                .Match(m => m
+                    .Field(f => f.Name)
+                    .Query("Laptop")
+                )
+            )
+        );
+
+        Console.WriteLine("🔍 Search results:");
+        foreach (var hit in searchResponse.Hits)
+            Console.WriteLine($"- {hit.Source.Name} (${hit.Source.Price})");
+    }
+}
+
+-----------------------------
+dotnet run --test your aplication
+------------------------------
+mv Program.cs OldProgram.cs
+
+rename the class to : OldProgram
+& change within > static void Main() to public static void Test()
+
+mkdir OldExamples
+mv OldProgram.cs OldExamples/
+
+-----------------------------------
+--Create new structure
+
+mkdir Services
+cd Services
+hdu@es1:~/ElasticDot/ElasticApp$ vi Services/ElasticsearchClientFactory.cs
+
+-------------
+#Shared Elasticsearch client
+using Nest;
+using System;
+
+namespace ElasticApp.Services
+{
+    public static class ElasticsearchClientFactory
+    {
+        private static readonly Uri node = new Uri("http://localhost:9200");
+
+        public static ElasticClient CreateClient()
+        {
+            var settings = new ConnectionSettings(node)
+                .DefaultIndex("products");
+            return new ElasticClient(settings);
+        }
+    }
+}
+
+------------------
+#Product service(indexing & searching)
+vi Services/ProductService.cs
+
+using Nest;
+using ElasticApp.Models;
+using System;
+
+namespace ElasticApp.Services
+{
+    public class ProductService
+    {
+        private readonly ElasticClient _client;
+
+        public ProductService(ElasticClient client)
+        {
+            _client = client;
+        }
+
+        public void IndexProduct(Product product)
+        {
+            var response = _client.IndexDocument(product);
+            Console.WriteLine(response.IsValid ? "Product indexed!" : "Failed to index.");
+        }
+
+        public void SearchProduct(string keyword)
+        {
+            var searchResponse = _client.Search<Product>(s => s
+                .Query(q => q
+                    .Match(m => m
+                        .Field(f => f.Name)
+                        .Query(keyword)
+                    )
+                )
+            );
+
+            Console.WriteLine("Search results:");
+            foreach (var hit in searchResponse.Hits)
+                Console.WriteLine($"- {hit.Source.Name} (${hit.Source.Price})");
+        }
+    }
+}
+------------------------
+
+#Index management service
+vi Services/IndexService.cs
+using Nest;
+using System;
+
+namespace ElasticApp.Services
+{
+    public class IndexService
+    {
+        private readonly ElasticClient _client;
+
+        public IndexService(ElasticClient client)
+        {
+            _client = client;
+        }
+
+        public void ListIndices()
+        {
+            var response = _client.Cat.Indices();
+            Console.WriteLine("=== Indices ===");
+            foreach (var idx in response.Records)
+                Console.WriteLine($"{idx.Index} | Docs: {idx.DocsCount} | Size: {idx.StoreSize}");
+        }
+
+        public void CreateIndex(string indexName)
+        {
+            var response = _client.Indices.Create(indexName, c => c);
+            Console.WriteLine(response.IsValid ? $"Index '{indexName}' created." : $"Failed to create {indexName}");
+        }
+
+        public void DeleteIndex(string indexName)
+        {
+            var response = _client.Indices.Delete(indexName);
+            Console.WriteLine(response.IsValid ? $"Index '{indexName}' deleted." : $"Failed to delete {indexName}");
+        }
+
+        public void ListNodes()
+        {
+            var nodes = _client.Cat.Nodes();
+            Console.WriteLine("=== Cluster Nodes ===");
+            foreach (var node in nodes.Records)
+                Console.WriteLine($"{node.Name} ({node.Ip}) Heap: {node.HeapPercent}%");
+        }
+    }
+}
+------------------------------
+#Product Model
+vi Models/Product.cs
+
+namespace ElasticApp.Models
+{
+    public class Product
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public double Price { get; set; }
+    }
+}
+
+--------------------------
+#Main Program
+vi Program.cs
+
+using System;
+using ElasticApp.Models;
+using ElasticApp.Services;
+
+class Program
+{
+    static void Main()
+    {
+        var client = ElasticsearchClientFactory.CreateClient();
+        var productService = new ProductService(client);
+        var indexService = new IndexService(client);
+
+        while (true)
+        {
+            Console.WriteLine("\n=== Elasticsearch Menu ===");
+            Console.WriteLine("1 - List Nodes");
+            Console.WriteLine("2 - List Indices");
+            Console.WriteLine("3 - Create Index");
+            Console.WriteLine("4 - Delete Index");
+            Console.WriteLine("5 - Index Product");
+            Console.WriteLine("6 - Search Product");
+            Console.WriteLine("0 - Exit");
+            Console.Write("Choose: ");
+            var choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    indexService.ListNodes();
+                    break;
+                case "2":
+                    indexService.ListIndices();
+                    break;
+                case "3":
+                    Console.Write("Enter index name: ");
+                    indexService.CreateIndex(Console.ReadLine() ?? "default");
+                    break;
+                case "4":
+                    Console.Write("Enter index name: ");
+                    indexService.DeleteIndex(Console.ReadLine() ?? "default");
+                    break;
+                case "5":
+                    var product = new Product();
+                    Console.Write("Product Id: "); product.Id = int.Parse(Console.ReadLine() ?? "0");
+                    Console.Write("Name: "); product.Name = Console.ReadLine() ?? "";
+                    Console.Write("Price: "); product.Price = double.Parse(Console.ReadLine() ?? "0");
+                    productService.IndexProduct(product);
+                    break;
+                case "6":
+                    Console.Write("Search keyword: ");
+                    productService.SearchProduct(Console.ReadLine() ?? "");
+                    break;
+                case "0":
+                    return;
+                default:
+                    Console.WriteLine("Invalid choice.");
+                    break;
+            }
+        }
+    }
+}
+-------------------
+/ElasticDot/ElasticApp$ dotnet run
+dotnet run
+
+
+
+

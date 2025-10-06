@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "9npd+u+gPZp51JXC+QnJBGc68nsOxZnB7V2sjQvtkDw6oDwzE01HMDO7OudeYg4doWqfFhRI1p+41IRzyxWHpg==",
+  "success": true,
+  "projectFilePath": "/home/hdu/ElasticDot/ElasticApp/ElasticApp.csproj",
+  "expectedPackageFiles": [
+    "/home/hdu/.nuget/packages/elasticsearch.net/7.17.5/elasticsearch.net.7.17.5.nupkg.sha512",
+    "/home/hdu/.nuget/packages/microsoft.csharp/4.6.0/microsoft.csharp.4.6.0.nupkg.sha512",
+    "/home/hdu/.nuget/packages/nest/7.17.5/nest.7.17.5.nupkg.sha512",
+    "/home/hdu/.nuget/packages/system.buffers/4.5.1/system.buffers.4.5.1.nupkg.sha512",
+    "/home/hdu/.nuget/packages/system.diagnostics.diagnosticsource/5.0.0/system.diagnostics.diagnosticsource.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
