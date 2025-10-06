@@ -30,11 +30,11 @@ node.attr.rack: r1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /home/hdu/elasticsearch/data
+path.data: cluster-configs1/data
 #
 # Path to log files:
 #
-path.logs: /home/hdu/elasticsearch/logs
+path.logs: cluster-configs1/logs
 #
 # ----------------------------------- Memory -----------------------------------
 #

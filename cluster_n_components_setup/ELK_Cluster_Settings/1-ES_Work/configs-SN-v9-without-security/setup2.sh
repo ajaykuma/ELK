@@ -7,10 +7,15 @@ start_time=$(date +%s)
 
 echo "cleaning old data"
 
-rm -rf elasticsearch/data/* elasticsearch/logs/* \
-rm -rf cluster-configs-2/data/* cluster-configs-2/logs/* \
-rm -rf cluster-configs-3/data/* cluster-configs-3/logs
-elasticsearch > elasticsearch_login_nsec.log 2>&1 &
+rm -rf elasticsearch/data/* elasticsearch/logs/* 
+
+cd cluster-configs-v9
+
+rm -rf cluster-configs1/data/* cluster-configs1/logs/* \
+rm -rf cluster-configs2/data/* cluster-configs2/logs/* \
+rm -rf cluster-configs3/data/* cluster-configs3/logs
+
+ES_PATH_CONF=cluster-configs1 elasticsearch > node1.log 2>&1 &
 
 until curl -s http://localhost:9200 >/dev/null 2>&1; do
   sleep 5
@@ -19,7 +24,7 @@ done
 echo "Elasticsearch is up!"
 
 echo "Starting second node"
-ES_PATH_CONF=cluster-configs-2 elasticsearch > node2.log 2>&1 &
+ES_PATH_CONF=cluster-configs2 elasticsearch > node2.log 2>&1 &
 
 until curl -s http://localhost:9201 >/dev/null 2>&1; do
   sleep 5
@@ -28,7 +33,7 @@ done
 echo "Elasticsearch is up on 2nd node!"
 
 echo "Starting third node"
-ES_PATH_CONF=cluster-configs-3 elasticsearch > node3.log 2>&1 &
+ES_PATH_CONF=cluster-configs3 elasticsearch > node3.log 2>&1 &
 
 until curl -s http://localhost:9202 >/dev/null 2>&1; do
   sleep 5
@@ -43,7 +48,7 @@ echo "All nodes started successfully!"
 echo "Total startup time: ${duration} seconds"
 
 echo "Logs:"
-echo "   - elasticsearch_login.log"
+echo "   - node1.log"
 echo "   - node2.log"
 echo "   - node3.log"
 

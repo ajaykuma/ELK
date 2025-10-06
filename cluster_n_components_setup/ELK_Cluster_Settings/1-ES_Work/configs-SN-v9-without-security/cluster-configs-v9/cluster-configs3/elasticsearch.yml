@@ -20,7 +20,7 @@ cluster.name: myclus
 #
 # Use a descriptive name for the node:
 #
-node.name: node2
+node.name: node3
 #
 # Add custom attributes to the node:
 #
@@ -30,11 +30,11 @@ node.attr.rack: r1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /home/hdu/cluster-configs-2/data
+path.data: cluster-configs3/data
 #
 # Path to log files:
 #
-path.logs: /home/hdu/cluster-configs-2/logs
+path.logs: cluster-configs3/logs
 #
 # ----------------------------------- Memory -----------------------------------
 #
@@ -53,16 +53,15 @@ bootstrap.memory_lock: true
 # By default Elasticsearch is only accessible on localhost. Set a different
 # address here to expose this node on the network:
 #
-#network.host: 10.156.0.15
 network.host: localhost
-http.port: 9201
-transport.port: 9301
+http.port: 9202
+transport.port: 9302
 node.roles: [master,data]
 #
 # By default Elasticsearch listens for HTTP traffic on the first free port it
 # finds starting at 9200. Set a specific HTTP port here:
 #
-#http.port: 9201
+#http.port: 9200
 #
 # For more information, consult the network module documentation.
 #
@@ -79,7 +78,6 @@ cluster.initial_master_nodes: ["node1"]
 #cluster.initial_master_nodes:
 #  - node1
   
-
 #
 # For more information, consult the discovery and cluster formation module documentation.
 #
@@ -99,7 +97,7 @@ cluster.initial_master_nodes: ["node1"]
 #----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
 #
 # The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 09:11:45
+# generated to configure Elasticsearch security features on 03-10-2025 09:14:22
 #
 # --------------------------------------------------------------------------------
 
@@ -107,15 +105,14 @@ cluster.initial_master_nodes: ["node1"]
 #----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
 #
 # The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 09:48:50
+# generated to configure Elasticsearch security features on 03-10-2025 09:50:37
 #
 # --------------------------------------------------------------------------------
-
 
 #----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
 #
 # The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 15:03:48
+# generated to configure Elasticsearch security features on 03-10-2025 15:04:35
 #
 # --------------------------------------------------------------------------------
 # Enable security features
@@ -133,5 +130,3 @@ xpack.security.transport.ssl:
   #verification_mode: certificate
   #keystore.path: certs/transport.p12
   #truststore.path: certs/transport.p12
-
-#----------------------- END SECURITY AUTO CONFIGURATION -------------------------

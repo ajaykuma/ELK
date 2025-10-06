@@ -1,13 +1,17 @@
 #Disable security and start nodes and Kibana
 #Setup
 On Node1:
+check in home directory
+hdu@es1:~$ ls
 
 lrwxrwxrwx  1 hdu  hdu         19 Oct  3 07:00 elasticsearch -> elasticsearch-9.0.0
 drwxr-xr-x 10 hdu  hdu       4096 Oct  3 16:05 elasticsearch-9.0.0
 
---start elasticsearch
---provided .bashrc is setup with
 
+make sure
+.bashrc is setup with
+
+<cat .bashrc>
 export ES_JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
 export PATH=$PATH:$ES_JAVA_HOME/bin
 export ELASTICSEARCH_HOME=/home/hdu/elasticsearch
@@ -15,11 +19,15 @@ export PATH=$PATH:$ELASTICSEARCH_HOME/bin
 export KIBANA_HOME=/home/hdu/kibana
 export PATH=$PATH:$KIBANA_HOME/bin
 
-For Node2 and Node2:
-/home/hdu/cluster-configs-2/elasticsearch.yml
-/home/hdu/cluster-configs-3/elasticsearch.yml
+copy configs 
+from git /1-ES_Work/configs-SN-v9-without-security/cluster-configs-v9 in home directory
 
---on each node disable security
+Now we have 
+cluster-configs-v9/cluster-configs1/elasticsearch.yml
+cluster-configs-v9/cluster-configs2/elasticsearch.yml
+cluster-configs-v9/cluster-configs3/elasticsearch.yml
+
+--on each node disable security (make sure these are correctly set)
 
 # Enable security features
 xpack.security.enabled: false
@@ -37,26 +45,27 @@ xpack.security.transport.ssl:
   #keystore.path: certs/transport.p12
   #truststore.path: certs/transport.p12
 
-also remove any certs or elasticsearch.keystore from
+also remove any certs or elasticsearch.keystore ,if any
 rm -rf elasticsearch/config/certs
 rm -rf elasticsearch/config/elasticsearch.keystore
 
-cluster-configs-2/certs
-cluster-configs-2/elasticsearch.keystore
-
-cluster-configs-3/certs
-cluster-configs-3/elasticsearch.keystore
+rm -rf cluster-configs1/certs
+rm -rf cluster-configs1/elasticsearch.keystore
+rm -rf cluster-configs2/certs
+rm -rf cluster-configs2/elasticsearch.keystore
+rm -rf cluster-configs3/certs
+rm -rf cluster-configs3/elasticsearch.keystore
 
 ---------------------------
 Starting..
 
 --on Node1
 --For Node1
-> elasticsearch
+> ES_PATH_CONF=cluster-configs1 elasticsearch
 --For Node2
-> ES_PATH_CONF=cluster-configs-2 elasticsearch
+> ES_PATH_CONF=cluster-configs2 elasticsearch
 --For Node3
-> ES_PATH_CONF=cluster-configs-3 elasticsearch
+> ES_PATH_CONF=cluster-configs3 elasticsearch
 
 OR
 use setup2.sh script (provided all xpack-security properties are set to false)
