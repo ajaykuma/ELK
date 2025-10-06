@@ -3,6 +3,10 @@
 set -e
 cd /home/hdu
 
+sudo unlink elasticsearch
+sudo ln -s elasticsearch-9.0.0 elasticsearch
+sudo chown -R hdu:hdu elasticsearch*
+
 start_time=$(date +%s)
 
 echo "cleaning old data"
