@@ -1,3 +1,4 @@
+#from command line or dev tools
 --Using curl and reading from JSON
 
 --create a json 'products.json'

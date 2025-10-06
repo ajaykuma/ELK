@@ -1,5 +1,4 @@
-
-################
+#####
 Understanding Embeddings
 ---------
 Login into https://openai.com/

@@ -1,3 +1,4 @@
+--More details
 #Performing searches
 #sample simple query(with query strings using _search API with q paramter)
 10.

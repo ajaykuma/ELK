@@ -1,3 +1,4 @@
+#Aggregation /Sorting functonalities
 #Sorting data
 using sort we can add one or more sorts on specific fields, where in each sort can be reversed.
 sort is defined per field level with field name '_score' to sort by score and optionally '_doc' to sort based on index order

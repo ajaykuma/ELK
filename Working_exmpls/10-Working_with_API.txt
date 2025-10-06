@@ -1,4 +1,5 @@
 #working with API
+
 GET /_nodes/_all
 
 GET /_nodes/_local
@@ -272,4 +273,4 @@ GET /_cat/indices/popu*?v&s=index
 health status index      uuid                   pri rep docs.count docs.deleted store.size pri.store.size
 green  open   population qdtpBy_uQTiPXdqV3gtlfw   5   1        466            0      1.8mb          938kb
 
-
+#Use newer features/apis when with v9

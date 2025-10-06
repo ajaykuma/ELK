@@ -6,6 +6,7 @@ It has collection of APIs for
 -visualization
 -model evaluation
 -deployment
+-----------------------
 
 It is extremely portable 
 TensorFlow Lite- can run on tiny mobile CPUs or microcontrollers with TF Lite

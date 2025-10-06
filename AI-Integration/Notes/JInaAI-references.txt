@@ -11,5 +11,5 @@ https://towardsdatascience.com/dropout-in-neural-networks-47a162d621d9
 https://becominghuman.ai/sequential-vs-functional-model-in-keras-20684f766057
 https://machinelearningmastery.com/difference-between-a-batch-and-an-epoch/
 
---working
+#working
 https://colab.research.google.com/github/jina-ai/jina/blob/master/docs/Using_Jina_on_Colab.ipynb

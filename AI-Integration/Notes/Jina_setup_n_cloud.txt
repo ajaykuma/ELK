@@ -13,8 +13,7 @@ jina hub new and follow instructions
 #to Test Locally
 jina executor --uses /home/hdu/MyExecutor31/config.yml --quiet-error
 
-
-or we can upload folder on Jina cloud web UI..
+OR we can upload folder on Jina cloud web UI..
 
 on Node: for example
 jina hub new

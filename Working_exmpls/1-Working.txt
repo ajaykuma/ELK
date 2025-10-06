@@ -5,7 +5,7 @@
 #checking nodes to begin
 GET /_cat/nodes?v
 
-#Searching/Listing Index
+##Searching/Listing Index
 1.
 #Using '_cat' API we can retrieve information from cluster in human friendly format
 

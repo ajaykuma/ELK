@@ -8,6 +8,7 @@ GET ecommerce2/_search
     }
 }
 
+--bulk usage
 #Using _bulk API expects a single line with action ie create,update or delete
 #It uses '/n' for new lines
 

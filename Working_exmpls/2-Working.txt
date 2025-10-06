@@ -144,9 +144,7 @@ GET ecommerce/_search
     }
 }
 
-OR
-
-#to verify if this worked
+OR #to verify if this worked
 #Click on 'Management>Index Patterns> and create an index pattern'. [Just enter your index name]
 #Now click on 'discover' and in search(on top) ,search for a document
 

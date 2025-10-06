@@ -61,7 +61,7 @@ text = r"""Apple was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne in A
            user interfaces, such as the original Macintosh in 1984, and Apple's marketing advertisements for its products received widespread critical 
            acclaim. However, the high price of its products and limited application library caused problems, as did power struggles between executives. 
            In 1985, Wozniak departed Apple amicably and remained an honorary employee,[9] while Jobs and others resigned to found NeXT.[10]
-          As the market for personal computers expanded and evolved through the 1990s, Apple lost market share to the lower-priced duopoly of Microsoft 
+          As the market for personal computers expanded evolved through the 1990s, Apple lost market share to the lower-priced duopoly of Microsoft 
           Windows on Intel PC clones. The board recruited CEO Gil Amelio to what would be a 500-day charge for him to rehabilitate the financially troubled 
           company—reshaping it with layoffs, executive restructuring, and product focus. In 1997, he led Apple to buy NeXT, solving the desperately 
           failed operating system strategy and bringing Jobs back. Jobs pensively regained leadership status, becoming CEO in 2000. Apple swiftly 

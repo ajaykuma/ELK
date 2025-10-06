@@ -1,4 +1,4 @@
---listing templates
+#listing templates
 
 GET _cat/templates
 GET /_index_template
@@ -46,8 +46,8 @@ GET /_cat/indices/logs*?v
 
 GET /logs*/_mappings
 
-Any additional indexes that match this pattern—logs-2023-01-02, logs-2023-01-03, 
-and so on—will inherit the same mappings and settings.
+#Any additional indexes that match this pattern—logs-2023-01-02, logs-2023-01-03, 
+#and so on—will inherit the same mappings and settings.
 
 --configuring multiple templates and then templates are chosen for indexes
 based on priority

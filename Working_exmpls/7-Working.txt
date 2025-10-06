@@ -1,4 +1,4 @@
-Query examples after ingesting data using logstash 
+##Query examples after ingesting data using logstash (or any other client such as NEST)
 ---------------------------------
 --refer logstash specific folder for instructions to load file
 Queries using Dev tools >
