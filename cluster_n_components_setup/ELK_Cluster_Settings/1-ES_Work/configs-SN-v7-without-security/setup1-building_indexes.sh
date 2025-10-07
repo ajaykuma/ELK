@@ -24,9 +24,10 @@ curl -XPOST "http://localhost:9200/ecommerce/_bulk" -H "Content-Type: applicatio
 echo 'loading data in recipes'
 curl -XPOST 'http://localhost:9200/recipes/_bulk' -H "Content-Type: application/json" --data-binary @datasets/recipes2.json
 
-echo 'loading data in customers'
-curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2_compact.json
+echo 'loading data in customers'curl -XPOST 'http://localhost:9200/recipes/_bulk' -H "Content-Type: application/json" --data-binary @datasets/customers2_compact.json
 
+echo 'counts'
 GET ecommerce/_count
 GET recipes/_count
 GET customers/_count
+
