@@ -142,7 +142,7 @@ GET /bankdata/_search
   }
 }
 
------
+=================================================
 #Managing state using policy
 PUT /_plugins/_ism/policies/mgmt_policy?pretty
 {

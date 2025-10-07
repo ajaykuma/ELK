@@ -3,10 +3,79 @@
 #sample simple query(with query strings using _search API with q paramter)
 10.
 GET /ecommerce/_search?q=cashewnuts
-
 GET /ecommerce/_search 
-
 GET /ecommerce/_search?q=elasticsearch*
+GET /ecommerce/_search?q=cashewnuts
+GET /recipes/_search?q=beef
+GET /ecommerce/_search
+GET /customers2/_search?q=google.de
+
+GET /recipes/_search?q=Beef Chuck Roast
+Explaination: simple query-string search
+Equivalent:
+GET /recipes/_search
+{
+  "query": {
+    "query_string": {
+      "query": "Beef Chuck Roast"
+    }
+  }
+}
+
+By default, it searches across all full-text fields in your recipes index (like name, description, and ingredients).
+Elasticsearch uses the BM25 similarity algorithm to calculate the _score — the relevance of each document.
+Each document’s score is based on:
+--Term Frequency (TF): how often “Beef”, “Chuck”, and “Roast” appear.
+--Inverse Document Frequency (IDF): how rare those terms are in the entire index.
+--Field Length Normalization: shorter text fields (like name) are weighted more heavily than long fields (ingredients).
+
+For document:
+"name": "Drip Beef, Two Ways",
+"ingredients": "1 whole Beef Chuck Roast..."
+
+It scores very high (_score: 15.475) because:
+
+“Beef” appears in both the title and ingredients
+“Chuck” and “Roast” also appear in ingredients
+These terms are close together in context.
+
+GET /recipes/_search?q=Chuck Beef Roast
+
+the same top documents appear with the same scores (15.475, 11.593, etc.).
+Query-string search is tokenized, so word order doesn’t matter.
+The analyzer breaks “Beef Chuck Roast” and “Chuck Beef Roast” into the same tokens:
+["beef", "chuck", "roast"]
+
+Since BM25 scoring is term-based, the order of words doesn’t change the results.
+
+| Recipe Name                                     | Score  | Why it ranked high                                                                            |
+| ----------------------------------------------- | ------ | --------------------------------------------------------------------------------------------- |
+| **Drip Beef, Two Ways**                         | 15.475 | All three query terms (“Beef”, “Chuck”, “Roast”) appear multiple times, in short text fields. |
+| **Beer-Braised Beef with Onions**               | 11.59  | Contains “Beef” and “Chuck Roast”.                                                            |
+| **Spicy Stewed Beef with Creamy Cheddar Grits** | 11.59  | Has “Beef” and “Chuck Roast” in `ingredients`.                                                |
+| **Italian Pot Roast**                           | 9.23   | Contains “Beef”, “Chuck”, “Roast”, but terms are farther apart.                               |
+| **Hot Roast Beef Sandwiches**                   | 8.09   | Two words match but not “Chuck”.                                                              |
+
+The _score is not absolute — it’s a relative measure within the query results only.
+A higher _score = stronger match.
+
+--to see why a document got high score
+GET /recipes/_explain/gbXZvJkBP7cbH4icpkAI
+{
+  "query": {
+    "query_string": {
+      "query": "Beef Chuck Roast"
+    }
+  }
+}
+
+Conclusion:
+| Concept                             | Description                                                     |
+| ----------------------------------- | --------------------------------------------------------------- |
+| **Algorithm**                       | BM25 (term frequency, rarity, length normalization)             |
+| **Default Search Type**             | `query_string` across all text fields                           |
+| **Word Order**                      | Ignored (tokens matched individually)                           |
+| **Why “Drip Beef, Two Ways” is #1** | Contains all query tokens multiple times in shorter text fields |
 
 #
 The match query analyzes any provided text before performing a search.
@@ -20,16 +89,138 @@ GET /ecommerce/_search
   }
   }
 
-try same on ecommerce3
-GET /ecommerce3/_search
+--shows some results
+
+GET /customers2/_search
 {
   "query": {
   "match": 
-  {"title": "cashewnuts"}
+  {"email": "google"}
   }
   }
 
+no results because of how Elasticsearch analyzes (tokenizes) text fields by default.
+
+By default, Elasticsearch uses the standard analyzer for text fields.
+The standard analyzer splits text on special characters — including @ and ..
+So "rthomas4r@google.pl" gets tokenized into tokens like:
+["rthomas4r", "google", "pl"]
+
+that should match "google", right?
+But it depends on how the field is mapped.
+
+--probably field mapping here is keyword and not text
+When we indexed those documents via the bulk API, Elasticsearch automatically inferred mappings from the JSON structure.
+Because email looks like a structured, not a sentence-like field, Elasticsearch’s dynamic mapping rules would map it as a keyword field.
+
+GET customers2/_mapping/
+shows>        "email" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+
+--check tokenization
+GET /customers2/_analyze
+{
+  "field": "email",
+  "text": "rthomas4r@google.pl"
+}
+
+result shows
+{
+  "tokens" : [
+    {
+      "token" : "rthomas4r",
+      "start_offset" : 0,
+      "end_offset" : 9,
+      "type" : "<ALPHANUM>",
+      "position" : 0
+    },
+    {
+      "token" : "google.pl",
+      "start_offset" : 10,
+      "end_offset" : 19,
+      "type" : "<ALPHANUM>",
+      "position" : 1
+    }
+  ]
+}
+and here it means our analyzer isn’t splitting it, and that’s the real reason it failed.
+The default standard analyzer did not split "google.pl" into "google" and "pl".
+It treated the dot (.) as part of the same token.
+
+and not like
+{
+  "tokens": [
+    { "token": "rthomas4r" },
+    { "token": "google" },
+    { "token": "pl" }
+  ]
+}
+
+where : it means "google" is a searchable token.
 #
+
+GET /customers2/_search
+{
+  "query": {
+    "match": { "email": "google.pl" }
+  }
+}
+
+--using wildcard query
+GET /customers2/_search
+{
+  "query": {
+    "wildcard": {
+      "email": {
+        "value": "*google*"
+      }
+    }
+  }
+}
+
+--------------------
+#or we Change the analyzer for email
+reindex with a custom analyzer that splits on dots and @ signs.
+PUT /customers2_new
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "email_analyzer": {
+          "type": "custom",
+          "tokenizer": "uax_url_email"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "email": {
+        "type": "text",
+        "analyzer": "email_analyzer",
+        "fields": {
+          "keyword": { "type": "keyword" }
+        }
+      }
+    }
+  }
+}
+
+--Then reindex data
+POST /_reindex
+{
+  "source": { "index": "customers2" },
+  "dest": { "index": "customers2_fixed" }
+}
+
+--Test analyzer
+---------------------
 11.
 GET /ecommerce/_search?q=*
 
@@ -65,24 +256,43 @@ GET /ecommerce/_explain/170?q=name:cashewnuts
 #Embedding boolean logic in querying
 13.
 GET /ecommerce/_search?q=name:(cashewnuts OR peanuts)
+This uses the query-string syntax, searching in the name field for documents containing either "cashewnuts" or "peanuts".
+Returns the document(s) with name="cashewnuts".
 
-GET /ecommerce/_search?q=name:(cashenuts AND "why elasticsearch is Awesome")
+
+GET /ecommerce/_search?q=name:(cashewnuts AND "why elasticsearch is Awesome")
+This asks for a document whose name field contains both terms:
+"cashewnuts" (token: cashewnuts)
+"why elasticsearch is awesome" (tokens: why, elasticsearch, is, awesome)
+name is a single field, and no document contains both “cashewnuts” and “why elasticsearch is awesome” together in it.
+
 
 #look for score value if value was higher in any case
 GET /ecommerce/_search?q=(name:(cashewnuts OR Framework) AND status:active)
+Since all our documents have "status": "active", that condition doesn’t filter anything out.
+"cashewnuts" matches _id=1003
+"Framework" matches nothing (no “Test Framework” in your data)
 
 #using boolean operators
 #prefix + (terms must be present) prefix -(terms must not be present)
 GET /ecommerce/_search?q=name:+cashewnuts -peanuts
+This uses query-string operators:
++cashewnuts → must include “cashewnuts”
+-peanuts → must not include “peanuts”
+There are no “peanuts” docs, so it simply finds docs that contain “cashewnuts”.
 
 #using phrases while querying
 14.
 #Note** remember default boolean operator is OR
 GET /ecommerce/_search?q=name:"Test Framework"
 #order of terms does matter when searching using phrase
+This is a phrase query.
+Elasticsearch treats "Test Framework" as a phrase match — meaning both terms must appear in that exact order and adjacent in the name field.
+Since no document contains that exact phrase "Test Framework", we get nothing.
 
 -------------
 #Querying using DSL (Domain specific language)
+#Using a Boolean query with multiple match clauses
 #using must or must_not(to exclude) which contribute to documents to relevancy scores
 15.
 GET /ecommerce/_search
@@ -97,6 +307,9 @@ GET /ecommerce/_search
   }
 }
 
+Must contain “cashewnuts” AND must contain “Test Framework”
+so no reults.
+
 GET /ecommerce/_search
 {
   "query": {
@@ -110,6 +323,10 @@ GET /ecommerce/_search
     }
   }
 }
+
+Return documents that contain “cashewnuts” and do not contain “Test Framework”.
+Since “cashewnuts” exists and no document has “Test Framework”,
+The document with name="cashewnuts" matches.
 
 #using bool with should clauses(to increase relevancy scores)
 #where should clause behave like logical operators
@@ -128,6 +345,9 @@ GET /ecommerce/_search
   }
 }
 
+"must" = required condition
+"should" = boosts score if matched but not required
+
 Another example
 GET /ecommerce/_search
 {
@@ -144,3 +364,442 @@ GET /ecommerce/_search
 }
 
 ---------
+##Deeper Queries
+
+#Looking at Elasticsearch strength — full-text magic, aggregations, fuzziness, boosting, semantic-style matching
+## Full-Text Search with Multi-Field Boosting
+--Find recipes about roast beef, but prioritize those with it in the title.
+
+GET /recipes/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "roast beef",
+      "fields": ["name^3", "description^1", "ingredients^2"]
+    }
+  }
+}
+
+Searches all fields.
+The ^3 on name boosts matches in titles.
+BM25 scoring boosts docs where terms appear more frequently and closer together.
+Expected: top results like “Italian Pot Roast”, “Hot Roast Beef Sandwiches”
+
+## Fuzzy Ingredient Search (handling typos)
+--Search for recipes with “chiken” (misspelled) instead of “chicken”:
+GET /recipes/_search
+{
+  "query": {
+    "match": {
+      "ingredients": {
+        "query": "chiken",
+        "fuzziness": "AUTO"
+      }
+    }
+  }
+}
+
+Elasticsearch magic:
+It automatically expands to nearby spellings (“chicken”, “chickens”), thanks to edit distance (fuzziness).
+
+## Filter by Cook Time + Text Search
+--Find beef recipes under 3 hours of cook time.
+GET /recipes/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "ingredients": "beef" } }
+      ],
+      "filter": [
+        { "range": { "cookTime.keyword": { "lte": "PT3H" } } }
+      ]
+    }
+  }
+}
+
+must affects score (text relevance)
+filter doesn’t — it’s cached and super fast.
+
+## Aggregations: “What ingredients appear most often?
+--Find top 10 most common words in ingredients across all recipes.
+GET /recipes/_search
+{
+  "size": 0,
+  "aggs": {
+    "top_ingredients": {
+      "terms": {
+        "field": "ingredients",
+        "size": 10
+      }
+    }
+  }
+}
+
+Elasticsearch magic:
+Aggregation queries don’t return hits — they compute faceted counts across fields, giving you data insights in real time.
+
+But if we see:
+-------------error-----------
+"type" : "search_phase_execution_exception",
+    "reason" : "all shards failed",
+    "phase" : "query",
+    "grouped" : true,
+    "failed_shards" : [
+      {
+        "shard" : 0,
+        "index" : "recipes",
+        "node" : "_oK0dNiARgiNXyXQX62vsw",
+        "reason" : {
+          "type" : "illegal_argument_exception",
+          "reason" : "Text fields are not optimised for operations that require per-document field data like aggregations and sorting, 
+so these operations are disabled by default. Please use a keyword field instead. Alternatively,
+ set fielddata=true on [ingredients] in order to load field data by uninverting the inverted index. Note that this can use significant memory."
+------------error complete------------
+WHY?
+field ingredients is mapped as "type": "text".
+Text fields are meant for full-text search (tokenized words, analyzed).
+But aggregations and sorting require exact values, not analyzed tokens.
+
+Here:
+Elasticsearch >  can’t aggregate on analyzed text — suggests to use a .keyword subfield or enable fielddata
+
+Use the .keyword field i.e. access the raw exact-value version of the field using .keyword.
+
+--modified query
+
+GET /recipes/_search
+{
+  "size": 0,
+  "aggs": {
+    "top_ingredients": {
+      "terms": {
+        "field": "ingredients.keyword",
+        "size": 10
+      }
+    }
+  }
+}
+
+Other option could be: Split ingredients into an array of terms during indexing
+i.e. preprocess data so that ingredients is a JSON array
+"ingredients": [
+  "beef chuck roast",
+  "beef broth",
+  "italian seasoning",
+  "salt",
+  "pepperoncini peppers"
+]
+
+and try querying: GET /recipes/_search
+{
+  "size": 0,
+  "aggs": {
+    "top_ingredients": {
+      "terms": {
+        "field": "ingredients.keyword",
+        "size": 10
+      }
+    }
+  }
+}
+--should give better results
+
+
+## “More Like This” (MLT) Query
+Find recipes similar to “Italian Pot Roast”.
+GET /recipes/_search
+{
+  "query": {
+    "more_like_this": {
+      "fields": ["name", "description", "ingredients"],
+      "like": [
+        { "_id": "JbXZvJkBP7cbH4icpkAI" }  // ID of "Italian Pot Roast"
+      ],
+      "min_term_freq": 1,
+      "max_query_terms": 12
+    }
+  }
+}
+
+Elasticsearch magic:
+It analyzes that recipe’s text and builds a “fingerprint” of important terms to find others with similar ingredient patterns.
+Fingerprint:
+When we run query:
+
+It Fetches that document from our index (the "Italian Pot Roast" recipe).
+Runs it through the same text analyzers that are used for search (tokenizing, lowercasing, removing stop words, etc.).
+Counts how often each term appears in that document (term frequency, TF).
+Looks up how common those same terms are across the entire index (inverse document frequency, IDF).
+Keeps the most distinctive words — the ones that define this document and make it unique compared to others.
+Builds a query out of those “important” words.
+Those top distinctive terms together form what we call a fingerprint of that document’s content.
+
+Example:
+Name: Italian Pot Roast
+Ingredients:
+Beef Chuck Roast  
+Roasted Red Peppers  
+Artichoke Hearts  
+Sundried Tomatoes  
+Beef Stock  
+Garlic  
+Wine
+
+After analyzing, Elasticsearch might extract tokens like:
+["beef", "roast", "artichoke", "tomatoes", "garlic", "wine"]
+
+it looks across all recipes and asks: > 
+Which other recipes contain many of these terms, in similar proportions?
+
+That “vector” of important terms — beef, roast, garlic, wine, tomatoes — becomes the semantic fingerprint for this recipe.
+So if another recipe shares many of those rare, distinctive terms (say, “Beer-Braised Beef with Onions” or “Drip Beef, Two Ways”), it will score high on similarity.
+
+Under the hood:
+TF (term frequency): Words that appear often in this recipe are important.
+IDF (inverse document frequency): Words that are rare across the index (e.g., “artichoke”) get more weight than common words (e.g., “beef”).
+Result: The top max_query_terms words are used to build a new BM25-based query.
+
+Elasticsearch implements “similar documents” or “recommendations” — like “More like this recipe.”
+
+## “Ingredient must have” Query with Boolean logic
+--Find recipes with both “beef” and “onion” in ingredients.
+GET /recipes/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "ingredients": "beef" } },
+        { "match": { "ingredients": "onion" } }
+      ]
+    }
+  }
+}
+
+Combine ingredients to create dynamic “pantry searches” — “What can I cook with what I have?”
+
+## Phrase Match: Exact Matches for “beef stew”
+GET /recipes/_search
+{
+  "query": {
+    "match_phrase": {
+      "name": {
+        "query": "beef stew"
+      }
+    }
+  }
+}
+
+Ensures exact word order, useful for named dishes.
+
+## Sorting by Date or Popularity
+Find newest beef recipes:
+GET /recipes/_search
+{
+  "query": {
+    "match": { "ingredients": "beef" }
+  },
+  "sort": [
+    { "datePublished": { "order": "desc" } }
+  ]
+}
+
+## Weighted Query — Boost “easy” or “quick” recipes
+Boost recipes whose descriptions mention “quick” or “easy”.
+GET /recipes/_search
+{
+  "query": {
+    "function_score": {
+      "query": { "match": { "ingredients": "beef" } },
+      "functions": [
+        {
+          "filter": { "match": { "description": "quick" } },
+          "weight": 2
+        },
+        {
+          "filter": { "match": { "description": "easy" } },
+          "weight": 2
+        }
+      ],
+      "score_mode": "sum",
+      "boost_mode": "multiply"
+    }
+  }
+}
+
+Elastic magic:
+Combines textual relevance with dynamic weighting → “smart ranking”.
+
+More on "Smart Ranking"
+ES doesn’t just find documents — it can rank them intelligently based on context, text relevance, metadata, and even custom logic we design.
+
+Every document that matches our query gets a _score — a relevance score calculated (by default) using BM25, based on:
+
+How often the search terms appear in the document (term frequency)
+How rare those words are across all documents (inverse document frequency)
+How short the field is (length normalization)
+
+But with ES,it lets us control and enhance this ranking using function scores, boosting, and hybrid logic, 
+to reflect our business rules or domain intuition.
+
+1.Field Boosting — “Title matters more than description”
+> tell Elasticsearch which fields are more important
+For example:
+GET /recipes/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "beef roast",
+      "fields": [
+        "name^3",          // title = 3× weight
+        "description^1",
+        "ingredients^2"
+      ]
+    }
+  }
+}
+
+--Smart Ranking logic:
+A recipe where “beef roast” is in the name ranks higher than one where it’s only in the description.
+
+2.Function Score — Custom Boosts Based on Metadata
+> Boost recipes that are quick to cook or recently published:
+GET /recipes/_search
+{
+  "query": {
+    "function_score": {
+      "query": { "match": { "ingredients": "beef" } },
+      "functions": [
+        {
+          "filter": { "range": { "cookTime.keyword": { "lte": "PT1H" } } },
+          "weight": 3
+        },
+        {
+          "filter": { "range": { "datePublished": { "gte": "2020-01-01" } } },
+          "weight": 2
+        }
+      ],
+      "score_mode": "sum",
+      "boost_mode": "multiply"
+    }
+  }
+}
+
+Result:
+Each matching doc gets a base BM25 _score.
+Then, if it’s quick to cook, it gets ×3 weight.
+If it’s recent, it gets ×2.
+Elasticsearch multiplies/combines these to produce a smarter _score.
+So a new, quick beef recipe outranks a 2010 one that takes 5 hours to cook
+
+3. Script Scoring — Write Your Own Formula
+>define a custom mathematical formula for ranking.
+--prefer recipes that use fewer ingredients and cook faster.
+
+GET /recipes/_search
+{
+  "query": {
+    "script_score": {
+      "query": { "match": { "ingredients": "beef" } },
+      "script": {
+        "source": """
+          double base = _score;
+          double cookBoost = doc['cookTime.keyword'].value == 'PT1H' ? 2 : 1;
+          double complexityPenalty = 1.0 / (doc['ingredients'].size() + 1);
+          return base * cookBoost * complexityPenalty;
+        """
+      }
+    }
+  }
+}
+
+Smart Ranking logic:
+
+Base text relevance (_score) ×
+Boost for fast cook times ×
+Penalize complex recipes (many ingredients)
+
+4. User Personalization or Context-Aware Ranking
+we can incorporate user behavior signals:
+
+“Boost recipes this user previously viewed”
+“Boost recipes similar to those they liked”
+“Boost recipes matching their dietary profile”
+
+"should": [
+  { "match": { "ingredients": "garlic" } },         // user preference
+  { "term": { "recipeYield": 2 } }                  // small serving
+]
+
+5. Semantic Similarity (“More Like This” + Function Score)
+> Combine MLT (similar content) with boosting:
+
+GET /recipes/_search
+{
+  "query": {
+    "function_score": {
+      "query": {
+        "more_like_this": {
+          "fields": ["name", "description", "ingredients"],
+          "like": [{ "_id": "JbXZvJkBP7cbH4icpkAI" }]
+        }
+      },
+      "functions": [
+        { "filter": { "match": { "description": "quick" } }, "weight": 2 }
+      ],
+      "score_mode": "sum"
+    }
+  }
+}
+
+Finds recipes similar to “Italian Pot Roast”
+Then re-ranks them higher if the description says “quick” or “easy”
+
+## Semantic-style Search with multi_match best_fields
+Find recipes for “slow cooked beef” — Elasticsearch matches semantically across fields.
+GET /recipes/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "slow cooked beef",
+      "type": "best_fields",
+      "fields": ["name", "description", "ingredients"]
+    }
+  }
+}
+“slow cooked beef” finds “Sunday Night Stew”, “Drip Beef, Two Ways”, etc. — even though not exact word matches.
+
+## Combining Power — “Pantry Search + Quick Filter + Similarity”
+--Show me quick recipes with beef and garlic that are like Italian Pot Roast
+
+GET /recipes/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "ingredients": "beef" } },
+        { "match": { "ingredients": "garlic" } }
+      ],
+      "should": [
+        { "more_like_this": {
+            "fields": ["description", "ingredients"],
+            "like": [{ "_id": "JbXZvJkBP7cbH4icpkAI" }],
+            "boost": 2
+        }}
+      ],
+      "filter": [
+        { "range": { "cookTime.keyword": { "lte": "PT3H" } } }
+      ]
+    }
+  }
+}
+
+Combines:
+
+Boolean logic (must)
+MLT (semantic similarity)
+Filter (speed)
+Boost (ranking relevance)
+
+==========================
+
