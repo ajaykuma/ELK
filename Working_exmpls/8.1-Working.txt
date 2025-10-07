@@ -1,0 +1,367 @@
+##Leaf Queries
+--These are the basic building blocks of Elasticsearch queries — 
+they match documents based on individual fields.
+#Match query (full-text or exact match)
+Find customers whose last name is Smith:
+
+GET customers2/_search
+{
+  "query": {
+    "match": { "last": "Smith" }
+  }
+}
+
+#Term query (exact keyword match)
+GET customers2/_search
+{
+  "query": {
+    "term": {
+      "package.keyword": "Premium"
+    }
+  }
+}
+
+
+#Range query
+GET customers2/_search
+{
+  "query": {
+    "range": {
+      "transactions": { "gt": 50 }
+    }
+  }
+}
+
+
+# Prefix query
+GET customers2/_search
+{
+  "query": {
+    "prefix": { "first.keyword": "Jo" }
+  }
+}
+
+##Compound Queries
+Compound queries combine multiple leaf queries using logical operators like must, should, and must_not.
+
+#bool query
+--Find Premium customers in Florida who have priority support and more than 50 transactions:
+
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "package.keyword": "Premium" } },
+        { "term": { "address.state.keyword": "Florida" } }
+      ],
+      "filter": [
+        { "term": { "prio_support": true } },
+        { "range": { "transactions": { "gt": 50 } } }
+      ]
+    }
+  }
+}
+
+must affects scoring (relevance)
+filter doesn’t affect scoring, good for structured conditions
+
+# should (logical OR)
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        { "term": { "package.keyword": "Premium" } },
+        { "term": { "package.keyword": "XXL" } }
+      ],
+      "minimum_should_match": 1
+    }
+  }
+}
+
+# Nested bools
+Find customers from Florida or California who also have priority support:
+
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "should": [
+              { "term": { "address.state.keyword": "Florida" } },
+              { "term": { "address.state.keyword": "California" } }
+            ]
+          }
+        },
+        { "term": { "prio_support": true } }
+      ]
+    }
+  }
+}
+
+##Join-like Behavior in Elasticsearch
+Elasticsearch doesn’t support traditional SQL-style joins, but there are 3 main patterns to emulate them:
+
+#has_child / has_parent queries
+--Requires a join field in mapping — not applicable to our current flat structure, but conceptually:
+GET /customers2/_search
+{
+  "query": {
+    "has_child": {
+      "type": "orders",
+      "query": {
+        "range": { "order_amount": { "gt": 100 } }
+      }
+    }
+  }
+}
+
+#Denormalized joins (most common)
+Since our dataset already embeds fields like address, we can use queries that “join” by matching subfields.
+For example, find customers in Florida with pet = manatee and package = Premium:
+
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "address.state.keyword": "Florida" } },
+        { "term": { "pet.keyword": "manatee" } },
+        { "term": { "package.keyword": "Premium" } }
+      ]
+    }
+  }
+}
+
+#Application-side joins
+If we had a separate orders index, we’d query both customers2 and orders separately and “join” results 
+in our application code (e.g., by customer ID).
+
+#Complex Query with Sorting and Aggregation
+Find top 5 Premium customers in Florida sorted by number of transactions, and group them by city:
+
+GET customers2/_search
+{
+  "size": 5,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "package.keyword": "Premium" } },
+        { "term": { "address.state.keyword": "Florida" } }
+      ]
+    }
+  },
+  "sort": [
+    { "transactions": { "order": "desc" } }
+  ],
+  "aggs": {
+    "by_city": {
+      "terms": { "field": "address.city.keyword" },
+      "aggs": {
+        "avg_transactions": { "avg": { "field": "transactions" } }
+      }
+    }
+  }
+}
+
+#some real-world, insight-driven Elasticsearch queries using our customers2 index.
+#1.Which state has the highest average number of transactions?
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_state": {
+      "terms": { "field": "address.state.keyword", "size": 50 },
+      "aggs": {
+        "avg_transactions": { "avg": { "field": "transactions" } }
+      }
+    }
+  }
+}
+
+Groups customers by state.
+Calculates average number of transactions per state.
+Sort the output client-side or by adding: "order": { "avg_transactions": "desc" }
+
+#2.Average transactions by package type and priority support
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_package": {
+      "terms": { "field": "package.keyword" },
+      "aggs": {
+        "support_split": {
+          "terms": { "field": "prio_support" },
+          "aggs": {
+            "avg_transactions": { "avg": { "field": "transactions" } }
+          }
+        }
+      }
+    }
+  }
+}
+
+See how priority support customers perform vs non-priority within each package type.
+
+#3.Customers with multiple pets and Premium plans
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "package.keyword": "Premium" } },
+        { "range": { "number_pets": { "gt": 1 } } }
+      ]
+    }
+  },
+  "sort": [{ "number_pets": "desc" }],
+  "_source": ["first", "last", "package", "number_pets", "transactions", "address.state"]
+}
+
+Lists Premium customers with more than one pet, sorted by how many pets they have.
+
+#4.Correlation-style — average transactions and age by package type
+
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "package_group": {
+      "terms": { "field": "package.keyword" },
+      "aggs": {
+        "avg_transactions": { "avg": { "field": "transactions" } },
+        "avg_age": {
+          "avg": {
+            "script": {
+              "source": "ChronoUnit.YEARS.between(LocalDate.parse(doc['dob'].value.substring(0,10)), LocalDate.now())"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+Throws error: since script was using ChronoUnit.YEARS.between(LocalDate.parse(doc['dob'].value.substring(0,10)), LocalDate.now())
+But LocalDate.now() is not permitted — can’t call arbitrary static methods.
+
+--Another approach
+Elasticsearch provides built-in date math and time APIs. We can use ZonedDateTime.now() instead 
+Uses Elasticsearch’s internal date parsing (ZonedDateTime.parse()).
+Uses ZonedDateTime.now() (which is allowed).
+Computes the age in years.
+--Ensure your dob field is mapped as a date type, not as a string.
+
+
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "package_group": {
+      "terms": { "field": "package.keyword" },
+      "aggs": {
+        "avg_transactions": { "avg": { "field": "transactions" } },
+        "avg_age": {
+          "avg": {
+            "script": {
+              "source": """
+                def dob = ZonedDateTime.parse(doc['dob'].value);
+                return ChronoUnit.YEARS.between(dob, ZonedDateTime.now());
+              """
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+throws error: limitation of Elasticsearch’s Painless scripting sandbox.
+Painless disallows direct calls to ZonedDateTime.now() or LocalDate.now() for security.
+(Those are Java static methods; Painless blocks them unless explicitly whitelisted.)
+
+#So we Use Instant.ofEpochMilli(new Date().getTime())
+Get “now” as a Java Date() object (allowed in Painless), then convert it to an Instant or ZonedDateTime.
+
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "package_group": {
+      "terms": { "field": "package.keyword" },
+      "aggs": {
+        "avg_transactions": { "avg": { "field": "transactions" } },
+        "avg_age": {
+          "avg": {
+            "script": {
+              "source": """
+                def dob = ZonedDateTime.parse(doc['dob'].value);
+                def now = ZonedDateTime.ofInstant(Instant.ofEpochMilli(new Date().getTime()), ZoneId.systemDefault());
+                return ChronoUnit.YEARS.between(dob, now);
+              """
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+#Top 5 cities with most Premium customers
+--Shows where your Premium customers are most concentrated.
+
+GET customers2/_search
+{
+  "size": 0,
+  "query": {
+    "term": { "package.keyword": "Premium" }
+  },
+  "aggs": {
+    "top_cities": {
+      "terms": { "field": "address.city.keyword", "size": 5 }
+    }
+  }
+}
+
+#Join-like — customers and states grouped by package
+--multi-level group-by: state → package → average transactions.
+GET customers2/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_state": {
+      "terms": { "field": "address.state.keyword" },
+      "aggs": {
+        "by_package": {
+          "terms": { "field": "package.keyword" },
+          "aggs": {
+            "avg_transactions": { "avg": { "field": "transactions" } }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+#Recent Premium signups (joined after 2016)
+GET customers2/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "package.keyword": "Premium" } },
+        { "range": { "registered_on": { "gte": "2016-01-01" } } }
+      ]
+    }
+  },
+  "sort": [{ "registered_on": "desc" }],
+  "_source": ["first", "last", "registered_on", "address.state", "transactions"]
+}
+
+#Filter Aggregation
+Find the average number of pets for customers with more than 50 transactions
