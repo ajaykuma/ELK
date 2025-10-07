@@ -119,4 +119,7 @@ POST _bulk
 or doing it using a file
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers.json
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2.json
+--if throws error due to multiline format
+jq -c '.' customers2.json > customers2_compact.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2_compact.json
 
