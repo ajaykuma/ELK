@@ -25,7 +25,7 @@ echo 'loading data in recipes'
 curl -XPOST 'http://localhost:9200/recipes/_bulk' -H "Content-Type: application/json" --data-binary @datasets/recipes2.json
 
 echo 'loading data in customers'
-curl -XPOST 'http://localhost:9200/recipes/_bulk' -H "Content-Type: application/json" --data-binary @datasets/customers2_compact.json
+curl -XPOST 'http://localhost:9200/customers/_bulk' -H "Content-Type: application/json" --data-binary @datasets/customers2_compact.json
 
 echo '----------------------'
 echo 'Counts'
