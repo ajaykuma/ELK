@@ -42,12 +42,78 @@ PUT logs-2023-01-01
   
 }
 
+#if above throws an error >
+Elasticsearch now distinguishes between:
+
+--Regular indices
+--Data streams
+
+If a template is configured for data streams, 
+you cannot manually create an index that matches its pattern. 
+Instead, you must create a data stream, and ES will automatically manage backing indices.
+
+--This creates a data stream, not a regular index.
+--ES will automatically create backing indices like .ds-logs-2023-01-000001.
+
+PUT _data_stream/logs-2023-01
+
 GET /_cat/indices/logs*?v
+
+NOte**For data streams:
+Every data stream requires a timestamp field in your document.
+By default, ES expects a field called @timestamp unless your data stream template specifies a different timestamp field in data_stream.timestamp_field.
+
+POST logs-2023-01/_doc
+{
+  "@timestamp": "2023-01-01T12:00:00Z",
+  "value": 42.5
+}
+
+#Must be in ISO 8601 format (yyyy-MM-dd'T'HH:mm:ssZ)
 
 GET /logs*/_mappings
 
+or while creating template >
+PUT _index_template/implogs
+{
+  "index_patterns": ["logs-2023-01-*"],
+  "data_stream": {
+    "timestamp_field": "timestamp"
+  },...
+
+--check which templates exist and what is their priority
+GET _index_template/logs
+
+---sample output
+"index_templates" : [
+    {
+      "name" : "logs",
+      "index_template" : {
+        "index_patterns" : ["logs-*-*"],
+        "composed_of" : ["logs-mappings","data-streams-mappings","logs-settings"],
+        "priority" : 100,
+        "data_stream" : {}
+      }
+    }
+]
+----sample ends-------
+There is a template named logs.
+Its index_patterns are logs-*-* → matches any index like logs-2023-01-01, logs-2025-01-01, etc.
+It contains a data_stream definition → this template is for data streams only.
+priority: 100 → very high, so it takes precedence over any other templates that match.
+
 #Any additional indexes that match this pattern—logs-2023-01-02, logs-2023-01-03, 
 #and so on—will inherit the same mappings and settings.
+
+--when we do a 
+PUT logs-2023-01-01
+
+Elasticsearch checks all templates that match logs-2025-01-01.
+The logs template matches and is data-stream-only.
+ES blocks manual index creation because:
+
+GET _index_template/implogs
+======================
 
 --configuring multiple templates and then templates are chosen for indexes
 based on priority
@@ -65,7 +131,7 @@ PUT _index_template/temp-01
   }
 }
 
-GET _cat/templates
+GET _cat/templates?v
 GET /_index_template
 ----
 PUT _index_template/temp-02
@@ -87,6 +153,7 @@ PUT mylogs-2023-01-01
 }
 
 GET /_cat/indices?v
+GET /_cat/indices/mylogs*?v
 
 -------
 DELETE _index_template/implogs
@@ -128,7 +195,7 @@ index template.
 PUT _index_template/implogs2
 {
   "index_patterns": [
-    "logs-2023-01-*"
+    "mlogs-2023-01-*"
   ],
   "template": {
     "aliases": {
@@ -161,8 +228,8 @@ PUT _index_template/implogs2
   }
 }
 
-PUT logs-2023-01-01
-GET logs-2023-01-01
+PUT mlogs-2023-01-01
+GET mlogs-2023-01-01
 -------------
 #working with aliases
 --a virtual index name that can point to one or more indexes

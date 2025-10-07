@@ -1,0 +1,48 @@
+{"index": {"_id":"1002"}}
+{"name": "why ES is Awesome","price":"100.00","description":"This book is all about ELK!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["ES","searching"]}
+{"index": {"_id":"1003"}}
+{"name": "cashewnuts","price":"110.00","description":"spicy cashewnuts","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1005"}}
+{"name": "why elasticsearch is Good","price":"200.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"1002"}}
+{"name": "why ES is Awesome","price":"900.00","description":"This book is all about ES- new edition","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["ES","programming"]}
+{"index": {"_id":"1003"}}
+{"name": "cashewnuts","price":"150.00","description":"spicy cashewnuts","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1005"}}
+{"name": "why elasticsearch is Awesome","price":"100.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"711"}}
+{"name": "Stock market","price":"1000.00","description":"This book is all trading","status":"active","quantity":10,"categories":[{"name":"Finance"}],"tags":["stock","trading"]}
+{"index": {"_id":"170"}}
+{"name": "almonds","price":"500.00","description":"spicy almonds","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1370"}}
+{"name": "Trading market","price":"1010.00","description":"This book is all trading","status":"active","quantity":12,"categories":[{"name":"Finance"}],"tags":["markets","trading"]}
+{"index": {"_id":"1297"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"173"}}
+{"name": "why elasticsearch is Good - new edition","price":"250.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"18"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"309"}}
+{"name": "mix dryfruits","price":"500.00","description":"spicy nuts","status":"active","quantity":150,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1339"}}
+{"name": "why logstash is needed","price":"101.00","description":"Logstash for data processing pipeline","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elk","programming"]}
+{"index": {"_id":"1310"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"711"}}
+{"name": "Stock market","price":"1000.00","description":"This book is all trading","status":"active","quantity":10,"categories":[{"name":"Finance"}],"tags":["stock","trading"]}
+{"index": {"_id":"170"}}
+{"name": "almonds","price":"500.00","description":"spicy almonds","status":"active","quantity":120,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1370"}}
+{"name": "Trading market","price":"1010.00","description":"This book is all trading","status":"active","quantity":12,"categories":[{"name":"Finance"}],"tags":["markets","trading"]}
+{"index": {"_id":"1297"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"173"}}
+{"name": "why elasticsearch is Good - new edition","price":"250.00","description":"This book is all about elasticsearch","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"18"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
+{"index": {"_id":"309"}}
+{"name": "mix dryfruits","price":"500.00","description":"spicy nuts","status":"active","quantity":150,"categories":[{"name":"Food"}],"tags":["snacks"]}
+{"index": {"_id":"1339"}}
+{"name": "why logstash is needed","price":"101.00","description":"Logstash for data processing pipeline","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elk","programming"]}
+{"index": {"_id":"1310"}}
+{"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}

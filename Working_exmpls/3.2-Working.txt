@@ -1,6 +1,10 @@
+copy elk/ELK/Working_exmpls/datasets .
+
+cd datasets
+
 #from command line or dev tools
 --Using curl and reading from JSON
-
+--check if products.json esists and if so , skip creation and use curl command
 --create a json 'products.json'
 { "index" : { "_index" : "products", "_id" : "1" } }
 { "title" : "Nike Running Shoes" }
@@ -41,6 +45,8 @@ curl -XGET "http://localhost:9200/products/_search?pretty" \
 ------------------
 Similarly
 
+--create index with specific # of shards and replicas (to avoid default settings)
+
 PUT /recipes
 {
   "settings": {
@@ -50,6 +56,7 @@ PUT /recipes
   }
 }
 
+--check if recipes.json esists and if so , skip creation and use curl command
 --create recipes.json
 
 { "index" : { "_index" : "recipes"}
@@ -66,7 +73,9 @@ GET recipes/_search
   }
 }
 
+--for more data
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes2.json
+
 curl -XGET "http://localhost:9200/recipes/_search?pretty" \
      -H "Content-Type: application/json" \
      -d '{
@@ -96,7 +105,8 @@ POST _bulk
 {"name": "Easter Leftover Sandwich", "ingredients": "12 whole Hard Boiled Eggs\n1/2 cup Mayonnaise\n3 Tablespoons Grainy Dijon Mustard\n Salt And Pepper, to taste\n Several Dashes Worcestershire Sauce\n Leftover Baked Ham, Sliced\n Kaiser Rolls Or Other Bread\n Extra Mayonnaise And Dijon, For Spreading\n Swiss Cheese Or Other Cheese Slices\n Thinly Sliced Red Onion\n Avocado Slices\n Sliced Tomatoes\n Lettuce, Spinach, Or Arugula", "url": "http://thepioneerwoman.com/cooking/2013/04/easter-leftover-sandwich/", "image": "http://static.thepioneerwoman.com/cooking/files/2013/03/leftoversandwich.jpg", "cookTime": "PT", "recipeYield": "8", "datePublished": "2013-04-01", "prepTime": "PT15M", "description": "Got leftover Easter eggs?    Got leftover Easter ham?    Got a hearty appetite?    Good! You've come to the right place!    I..."}
 
 ----------------
---Using
+--create index
+
 PUT /customers
 {
   "settings": {
@@ -120,6 +130,177 @@ or doing it using a file
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers.json
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2.json
 --if throws error due to multiline format
+--check if customers2_compact.json esists and if so , skip jq command and use curl
 jq -c '.' customers2.json > customers2_compact.json
+
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2_compact.json
+
+#working with csv
+run csvimport.sh
+
+chmod +x csvimport.sh
+
+./csvimport.sh
+
+--From Dev tools
+GET _cat/indices/bankdata?v
+GET _cat/indices/recipes?v
+GET _cat/indices/customers?v
+GET _cat/indices/products?v
+
+GET bankdata/_count
+GET products/_count
+GET recipes/_count
+GET customers/_count
+
+or
+GET /_cat/count/bankdata
+
+GET _cat/shards/recipes?v
+GET _cat/shards/bankdata?v
+
+GET /_cat/indices?bytes=b&s=store.size:desc&v
+GET /_cat/indices?s=store.size:desc&format=json&v
+
+GET /_cat/shards/recipes?h=index,shard,prirep,dc,state,node,unassigned.reason&v
+GET /_cat/shards/bankdata?h=index,shard,prirep,dc,node,segments.count&v
+
+#looking at allocation/shard level information
+
+GET /_cluster/health
+GET /_cluster/health/bankdata?level=shards
+
+--check shard 0 of index recipes, which is primary:
+GET /_cluster/allocation/explain
+{
+  "index": "recipes",
+  "shard": 0,
+  "primary": true
+}
+
+--for a replica shard
+GET /_cluster/allocation/explain
+{
+  "index": "recipes",
+  "shard": 0,
+  "primary": false
+}
+
+----------sample output--------
+{
+  "index" : "recipes",
+  "shard" : 0,
+  "primary" : false,
+  "current_state" : "started",
+  "current_node" : {
+    "id" : "_oK0dNiARgiNXyXQX62vsw",
+    "name" : "node3",
+    "transport_address" : "127.0.0.1:9302",
+    "attributes" : {
+      "ml.machine_memory" : "8324841472",
+      "ml.max_open_jobs" : "512",
+      "xpack.installed" : "true",
+      "ml.max_jvm_size" : "1073741824",
+      "transform.node" : "true"
+    },
+    "weight_ranking" : 1
+  },
+  "can_remain_on_current_node" : "yes",
+  "can_rebalance_cluster" : "yes",
+  "can_rebalance_to_other_node" : "no",
+  "rebalance_explanation" : "cannot rebalance as no target node exists that can both allocate this shard and improve the cluster balance",
+  "node_allocation_decisions" : [
+    {
+      "node_id" : "OrOVDVeXTF2ENIS6wlO37Q",
+      "node_name" : "node2",
+      "transport_address" : "127.0.0.1:9301",
+      "node_attributes" : {
+        "ml.machine_memory" : "8324841472",
+        "ml.max_open_jobs" : "512",
+        "xpack.installed" : "true",
+        "ml.max_jvm_size" : "1073741824",
+        "transform.node" : "true"
+      },
+      "node_decision" : "no",
+      "weight_ranking" : 1,
+      "deciders" : [
+        {
+          "decider" : "same_shard",
+          "decision" : "NO",
+          "explanation" : "a copy of this shard is already allocated to this node [[recipes][0], node[OrOVDVeXTF2ENIS6wlO37Q], [P], s[STARTED], a[id=2QirEtWxS-Ch0lKp9664-Q]]"
+        }
+      ]
+    },
+    {
+      "node_id" : "amvlsz--T3yXy6HP66Ew2g",
+      "node_name" : "node1",
+      "transport_address" : "127.0.0.1:9300",
+      "node_attributes" : {
+        "ml.machine_memory" : "8324841472",
+        "ml.max_open_jobs" : "512",
+        "xpack.installed" : "true",
+        "ml.max_jvm_size" : "1073741824",
+        "transform.node" : "true"
+      },
+      "node_decision" : "no",
+      "weight_ranking" : 1,
+      "deciders" : [
+        {
+          "decider" : "same_shard",
+          "decision" : "NO",
+          "explanation" : "a copy of this shard is already allocated to this node [[recipes][0], node[amvlsz--T3yXy6HP66Ew2g], [R], s[STARTED], a[id=lw0uW8O8R4OGI2fz5hPhwA]]"
+        }
+      ]
+    }
+  ]
+}
+-----------sample output completed--------
+Explaination:
+current_node gives details about the node:
+id: Elasticsearch internal node ID
+transport_address: node network address
+attributes: node properties like ML memory, X-Pack installed, etc.
+
+Allocation decisions:
+can_remain_on_current_node: yes → shard can safely stay on node3.
+can_rebalance_cluster: yes → ES can try to rebalance the cluster, but:
+   can_rebalance_to_other_node: no → cannot move this shard to any other node.
+   rebalance_explanation explains why it cannot move:
+          “no target node exists that can both allocate this shard and improve the cluster balance”
+          Meaning either other nodes already have this shard or moving it wouldn’t improve cluster balance.
+
+Node Allocation decisions:
+ES evaluates each node to see if the shard can be allocated there.
+
+Example: node2
+node_decision: no → shard cannot go here
+decider: same_shard → the reason
+explanation: node2 already has a copy of this shard (remember: a node cannot have duplicate shards of the same copy).
+
+Each node in the cluster is scored by Elasticsearch’s allocation deciders when deciding where to place a shard.
+
+weight_ranking is the rank of this node compared to others for placing this shard.
+
+Lower numbers = better candidate
+Higher numbers = less preferred
+
+Elasticsearch uses several allocation deciders, like:
+
+same_shard → prevents duplicate copies of the same shard on one node
+
+disk_threshold → prevents allocation if the node doesn’t have enough disk
+
+shard_balance → tries to distribute shards evenly across nodes
+
+awareness / zone → ensures shards are balanced across availability zones
+
+Each node gets scores from these deciders, and then weight_ranking is assigned:
+
+1 = best fit
+2, 3… = less fit
+
+Conclusion:
+When ES decides where to allocate or move a shard, it prefers nodes with the lowest weight_ranking.
+If can_rebalance_to_other_node: no and the weight_ranking of current node is 1, it basically means:
+“This shard is already on the optimal node — no other node is better.”
 
