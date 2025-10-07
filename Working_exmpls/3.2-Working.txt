@@ -8,7 +8,7 @@
 { "title" : "Adidas Basketball Shoes" }
 
 --use curl command
-curl -s -H "Content-Type: application/json" -XPOST 'http://ch1:9200/_bulk' --data-binary @products.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @products.json
 
 --edit json and remove _id
 { "index" : { "_index" : "products"} }
@@ -17,7 +17,7 @@ curl -s -H "Content-Type: application/json" -XPOST 'http://ch1:9200/_bulk' --dat
 { "title" : "Adidas Basketball Shoes" }
 
 --use curl command
-curl -s -H "Content-Type: application/json" -XPOST 'http://ch1:9200/_bulk' --data-binary @products.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @products.json
 
 --query the index
 GET _cat/indices?v
@@ -29,8 +29,26 @@ GET products/_search
   }
 }
 
+or using curl
+curl -XGET "http://localhost:9200/products/_search?pretty" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": {
+         "match_all": {}
+       }
+     }'
+
 ------------------
 Similarly
+
+PUT /recipes
+{
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
 
 --create recipes.json
 
@@ -39,7 +57,7 @@ Similarly
 { "index" : { "_index" : "recipes"}
 {"name": "Pasta with Pesto Cream Sauce", "ingredients": "3/4 cups Fresh Basil Leaves\n1/2 cup Grated Parmesan Cheese\n3 Tablespoons Pine Nuts\n2 cloves Garlic, Peeled\n Salt And Pepper, to taste\n1/3 cup Extra Virgin Olive Oil\n1/2 cup Heavy Cream\n2 Tablespoons Butter\n1/4 cup Grated Parmesan (additional)\n12 ounces, weight Pasta (cavitappi, Fusili, Etc.)\n2 whole Tomatoes, Diced", "url": "http://thepioneerwoman.com/cooking/2011/06/pasta-with-pesto-cream-sauce/", "image": "http://static.thepioneerwoman.com/cooking/files/2011/06/pesto.jpg", "cookTime": "PT10M", "recipeYield": "8", "datePublished": "2011-06-06", "prepTime": "PT6M", "description": "I finally have basil in my garden. Basil I can use. This is a huge development.     I had no basil during the winter. None. G..."}
 
-curl -s -H "Content-Type: application/json" -XPOST 'http://ch1:9200/_bulk' --data-binary @recipes.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes.json
 
 GET recipes/_search
 {
@@ -47,6 +65,23 @@ GET recipes/_search
     "match_all": {}
   }
 }
+
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes2.json
+curl -XGET "http://localhost:9200/recipes/_search?pretty" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": {
+         "match_all": {}
+       }
+     }'
+
+curl -XGET "http://localhost:9200/recipes/_count" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": {
+         "match_all": {}
+       }
+     }'
 
 --or from dev console
 POST _bulk
@@ -82,6 +117,6 @@ POST _bulk
 {"title" : "Ms","first" : "Phyllis","last" : "Grey","email" : "pgray87@studio3t.com","dob" : "1979-07-07T15:21:30.000+0000","address" : {"street" : {"name" : "Bobwhite","suffix" : "Circle","number" : "37"},"city" : "Orlando","state" : "Florida","zip_code" : 32808},"user_name" : "pgray87","package" : "Premium","prio_support" : true,"registered_on" : "2017-09-21T00:00:00.000+0000","transactions" : 8,"pet" : "manatee","number_pets" : 4,"Studio_3T_edition" : "Core"}
 
 or doing it using a file
-curl -s -H "Content-Type: application/json" -XPOST 'http://ch1:9200/_bulk' --data-binary @customers2.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers.json
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2.json
 
-use provided customers2.json

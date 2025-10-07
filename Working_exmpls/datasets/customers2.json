@@ -21,9 +21,7 @@
     "registered_on" : "2017-09-21T00:00:00.000+0000", 
     "transactions" : 8, 
     "pet" : "manatee", 
-    "number_pets" : 4, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 4}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e868702f", 
     "title" : "Mr", 
@@ -97,9 +95,7 @@
     "registered_on" : "2015-06-28T09:16:48.000+0000", 
     "transactions" : 53, 
     "pet" : "manatee", 
-    "number_pets" : 2, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 2}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e8686f97", 
     "first" : "Antonio", 
@@ -5995,9 +5991,7 @@
     "registered_on" : "2014-04-21T01:37:00.000+0000", 
     "transactions" : 55, 
     "pet" : "manatee", 
-    "number_pets" : 2, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 2}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e8686fae", 
     "first" : "James", 
@@ -6044,9 +6038,7 @@
     "registered_on" : "2015-09-28T16:24:25.000+0000", 
     "transactions" : 48, 
     "pet" : "manatee", 
-    "number_pets" : 2, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 2}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e8686f91", 
     "first" : "Christina", 
@@ -11443,9 +11435,7 @@
     "registered_on" : "2013-06-01T07:49:16.000+0000", 
     "transactions" : 52, 
     "pet" : "manatee", 
-    "number_pets" : 2, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 2}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e86871c8", 
     "title" : "Mr", 
@@ -12250,9 +12240,7 @@
     "registered_on" : "2014-10-28T21:28:38.000+0000", 
     "transactions" : 42, 
     "pet" : "manatee", 
-    "number_pets" : 2, 
-    "Studio_3T_edition" : "Core"
-}
+    "number_pets" : 2}
 { "create" : { "_index" : "customers2" } }
 {   "sno" : "57d28452ed5d4d54e86870bc", 
     "title" : "Ms", 
