@@ -18,8 +18,19 @@ GET /bankdata/_search
     }
 }
 
+Filters documents where age == 75 (term = exact match).
+Sorts results by:
+age ascending (youngest → oldest, though all are 75 here)
+then by balance descending (richest first)
+then by relevance score (_score)
+
+Considerations:
+term query does not analyze the value — it’s an exact numeric match (perfect for age).
+_score only applies to full-text queries, but you can still include it as a tie-breaker.
+
 ----
-#sort using mode
+#Sort Using Mode (for arrays or multiple values)
+
 GET /bankdata/_search
 {
   "query": {
@@ -35,6 +46,17 @@ GET /bankdata/_search
   ]  
 }
 
+but if balance is an array (e.g. multiple account balances),
+Elasticsearch uses the average of all values to sort.
+| Mode     | Meaning                     |
+| -------- | --------------------------- |
+| `min`    | Use lowest value in array   |
+| `max`    | Use highest value           |
+| `avg`    | Use average                 |
+| `sum`    | Use sum                     |
+| `median` | Available in newer versions |
+
+
 #aggregations
 #using term aggregation 
 #A multi-bucket value source based aggregation where buckets are dynamically built - one per unique value
@@ -49,7 +71,110 @@ GET /bankdata/_search
   }
 }
 
+balance is numeric, and terms aggregations are better for categorical or keyword fields.
+we’ll get many buckets (one per unique balance), which isn’t very useful.
+
+#Use histogram or range aggregation instead.
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "balance_ranges": {
+      "range": {
+        "field": "balance",
+        "ranges": [
+          { "to": 1000 },
+          { "from": 1000, "to": 5000 },
+          { "from": 5000, "to": 10000 },
+          { "from": 10000 }
+        ]
+      }
+    }
+  }
+}
+
+--might throw error because >field balance is currently mapped as a text field (i.e., full-text analyzed), 
+not a numeric or keyword field — and Elasticsearch doesn’t allow sorting or aggregations on text fields by default.
+
+Option 1: Enable fielddata on text field (Not recommended for production)
+If you can’t reindex immediately, you can temporarily enable fielddata:
+(This loads all text field values into memory, which can be expensive)
+
+GET /bankdata/_mapping/field/balance
+
+PUT /bankdata/_mapping
+{
+  "properties": {
+    "balance": {
+      "type": "text",
+      "fielddata": true
+    }
+  }
+}
+
+--Test query, if still fails then go for option 2 (which is anyways recommended)
+
+Option 2: Correct mapping
+Deleting and recreating the index with the right mapping.
+Reindexing your data
+
+DELETE /bankdata
+
+PUT /bankdata
+{
+  "mappings": {
+    "properties": {
+      "age":          { "type": "integer" },
+      "balance":      { "type": "float" },
+      "marital":      { "type": "keyword" },
+      "job":          { "type": "keyword" },
+      "education":    { "type": "keyword" },
+      "default":      { "type": "keyword" },
+      "housing":      { "type": "keyword" },
+      "loan":         { "type": "keyword" },
+      "contact":      { "type": "keyword" },
+      "day":          { "type": "integer" },
+      "month":        { "type": "keyword" },
+      "duration":     { "type": "integer" },
+      "campaign":     { "type": "integer" },
+      "pdays":        { "type": "integer" },
+      "previous":     { "type": "integer" },
+      "poutcome":     { "type": "keyword" }
+    }
+  }
+  ,
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
+
+./csvimport
+GET bankdata/_count
+
+--test the query again
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "balance_ranges": {
+      "range": {
+        "field": "balance",
+        "ranges": [
+          { "to": 1000 },
+          { "from": 1000, "to": 5000 },
+          { "from": 5000, "to": 10000 },
+          { "from": 10000 }
+        ]
+      }
+    }
+  }
+}
+
+
 #Aggregation results are in the response’s aggregations object
+
 GET /bankdata/_search
 {
   "aggs": {
@@ -61,6 +186,9 @@ GET /bankdata/_search
   }
 }
 
+Groups customers by marital status (e.g. “married”, “single”, “divorced”) and counts them.
+
+--we can also check and change
 GET /bankdata/_mappings
 
 PUT /bankdata/_mapping
@@ -83,6 +211,7 @@ PUT /bankdata/_mapping
 }
 
 #changing the amount of data that is considered for aggregation
+#Aggregation + Filtering on Range (balance filter)
 GET /bankdata/_search
 {
   "query": {
@@ -101,6 +230,9 @@ GET /bankdata/_search
     }
   }
 }
+
+Filters to customers with balance between 500 and 3000.
+Then groups them by marital status.
 
 #to see only aggregation result, use size paramter
 GET /bankdata/_search
@@ -123,7 +255,10 @@ GET /bankdata/_search
   }
 }
 
-#using sub-aggregation
+Tells Elasticsearch don’t return any actual documents,
+just return the aggregation summary.
+
+#using sub-aggregation (Nested Metrics)
 GET /bankdata/_search
 {
   "aggs": {
@@ -141,9 +276,342 @@ GET /bankdata/_search
     }
   }
 }
+Groups by marital (married, single, divorced)
+Calculates the average balance for each group.
+
+# Age Distribution by Marital Status
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_marital": {
+      "terms": {"field": "marital"},
+      "aggs": {
+        "age_stats": {
+          "stats": {"field": "age"}
+        }
+      }
+    }
+  }
+}
+Shows average, min, max, std deviation of age by marital status.
+
+# Average Balance by Age Range
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "age_brackets": {
+      "range": {
+        "field": "age",
+        "ranges": [
+          {"to": 30},
+          {"from": 30, "to": 50},
+          {"from": 50, "to": 70},
+          {"from": 70}
+        ]
+      },
+      "aggs": {
+        "avg_balance": {
+          "avg": {"field": "balance"}
+        }
+      }
+    }
+  }
+}
+Insight: “Older customers tend to have higher balances
+
+# Correlation-Style Insight — Who Saves More?
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "education_group": {
+      "terms": {"field": "education.keyword"},
+      "aggs": {
+        "avg_balance": {"avg": {"field": "balance"}},
+        "avg_age": {"avg": {"field": "age"}}
+      }
+    }
+  }
+}
+#Shows average balance and age by education level.
+
+---if limited---
+{
+  "took" : 6,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 3,
+    "successful" : 3,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 10000,
+      "relation" : "gte"
+    },
+    "max_score" : null,
+    "hits" : [ ]
+  },
+  "aggregations" : {
+    "education_group" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 0,
+      "buckets" : [ ]
+    }
+  }
+}
+
+
+----limited ends----
+
+Note**Elasticsearch stops counting hits after 10,000 documents by default.
+The "gte" (greater than or equal) relation means there are more than 10,000 documents, but it didn’t count beyond that limit.
+
+The index.max_result_window (default = 10,000) protects the cluster from:
+
+High memory use
+Deep pagination scans
+Overly expensive queries
+
+Options to Handle Large Result Sets / Pagination
+
+1. Use Composite Aggregations (Best for Large Buckets)
+Composite aggregations allow paginated aggregations, meaning you can fetch results in batches.
+
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "education_group": {
+      "composite": {
+        "size": 1000,
+        "sources": [
+          { "education": { "terms": { "field": "education.keyword" } } }
+        ]
+      },
+      "aggs": {
+        "avg_balance": { "avg": { "field": "balance" } },
+        "avg_age": { "avg": { "field": "age" } }
+      }
+    }
+  }
+}
+
+If there are more than 1000 buckets, Elasticsearch will return:
+"after_key": { "education": "some_value" }
+
+--use key to get to next page
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "education_group": {
+      "composite": {
+        "size": 1000,
+        "after": { "education": "some_value" },
+        "sources": [
+          { "education": { "terms": { "field": "education.keyword" } } }
+        ]
+      },
+      "aggs": {
+        "avg_balance": { "avg": { "field": "balance" } },
+        "avg_age": { "avg": { "field": "age" } }
+      }
+    }
+  }
+}
+
+--Use scroll API
+POST /bankdata/_search?scroll=1m
+{
+  "size": 1000,
+  "query": { "match_all": {} }
+}
+
+Fetch the next batch using scroll:
+POST /bankdata/_search?scroll=1m
+{
+  "size": 1000,
+  "query": { "match_all": {} }
+}
+
+Note**Scroll is for raw document iteration, not for aggregations.
+
+--Using PIT
+POST /bankdata/_pit?keep_alive=1m
+
+use it with search_after
+POST /_search
+{
+  "pit": { "id": "PIT_ID_HERE", "keep_alive": "1m" },
+  "size": 1000,
+  "sort": [{ "balance": "desc" }, { "_id": "asc" }]
+}
+
+--when needed stable pagination of sorted documents.
+
+--Increase index.max_result_window
+PUT bankdata/_settings
+{
+  "index.max_result_window": 100000
+}
+
+# Top Earners Within Each Marital Group
+GET /bankdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_marital": {
+      "terms": {"field": "marital"},
+      "aggs": {
+        "top_customers": {
+          "top_hits": {
+            "sort": [{"balance": {"order": "desc"}}],
+            "size": 3,
+            "_source": ["age", "balance", "education"]
+          }
+        }
+      }
+    }
+  }
+}
+
+Shows the top 3 customers (by balance) in each marital category.
+
+# Combine Range + Terms + Metric
+Show average balance by marital status, but only for balances > 5000
+GET /bankdata/_search
+{
+  "size": 0,
+  "query": {
+    "range": {"balance": {"gte": 5000}}
+  },
+  "aggs": {
+    "by_marital": {
+      "terms": {"field": "marital"},
+      "aggs": {
+        "avg_balance": {"avg": {"field": "balance"}}
+      }
+    }
+  }
+}
+
+concluding:
+| Feature        | What it Does                         | Type               |
+| -------------- | ------------------------------------ | ------------------ |
+| `term` query   | Exact match (no analysis)            | Filter             |
+| `range` query  | Numeric comparison                   | Filter             |
+| `sort`         | Orders results by one or more fields | Search result      |
+| `mode`         | Handles multi-valued fields          | Sort               |
+| `terms agg`    | Groups by unique categorical values  | Aggregation        |
+| `range agg`    | Buckets by numeric range             | Aggregation        |
+| `avg`, `stats` | Compute metrics                      | Metric aggregation |
+| `top_hits`     | Return sample docs per bucket        | Sub-aggregation    |
 
 =================================================
 #Managing state using policy
+#defining a hot–warm–delete ILM/ISM policy for managing time-based or size-based index lifecycles — specifically for indices matching newtestlog*.
+
+PUT _ilm/policy/mgmt_policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_age": "1m",
+            "max_primary_shard_size": "3mb",
+            "max_docs": 1500
+          }
+        }
+      },
+      "warm": {
+        "min_age": "1m",
+        "actions": {
+          "allocate": {
+            "number_of_replicas": 5
+          }
+        }
+      },
+      "delete": {
+        "min_age": "10m",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
+
+ILM uses phases (hot, warm, delete) instead of states.
+The keys are max_age, max_docs, etc., instead of min_index_age.
+The warm phase transition is automatic when the min age is reached.
+
+--create index template
+PUT _index_template/newtestlog
+{
+  "index_patterns": ["newtestlog*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 2,
+      "index.lifecycle.name": "mgmt_policy",
+      "index.lifecycle.rollover_alias": "newlogs"
+    },
+    "aliases": {
+      "newmylogs": {}
+    }
+  }
+}
+
+tells Elasticsearch to automatically apply the ILM policy to any index matching newtestlog*
+
+--Create an initial index:
+PUT newtestlog-000001
+{
+  "aliases": {
+    "newlogs": {
+      "is_write_index": true
+    }
+  }
+}
+
+--add sample documents
+POST newlogs/_doc
+{ "message": "test log entry" }
+
+
+--trigger rollver manually(optional)
+POST newlogs/_rollover
+
+--check ilm status
+GET _ilm/policy/mgmt_policy
+GET newtestlog-000001/_ilm/explain
+Shows: policy’s current phase and what action Elasticsearch plans next.
+
+--------------------------------------------------------------------------
+in OpenSearch
+
+
+ISM Policy: mgmt_policy
+
+This defines:
+Hot phase: Active writes.
+--Rolls over when:
+	Index age ≥ 1m
+	Primary shard size ≥ 3MB
+	Document count ≥ 1500
+  Then transitions to warm.
+Warm phase: Reduced write activity, optimized for storage.
+   Sets number_of_replicas to 5.
+   After 10m (index age), transitions to delete.
+
+Delete phase: Deletes the index.
+The ism_template applies this policy automatically to all indices matching newtestlog*.
+
 PUT /_plugins/_ism/policies/mgmt_policy?pretty
 {
   "policy": {
@@ -202,6 +670,7 @@ PUT /_plugins/_ism/policies/mgmt_policy?pretty
   }
 }
 
+--Index Template
 PUT _index_template/newtestlog
 {
   "index_patterns": [
@@ -218,7 +687,6 @@ PUT _index_template/newtestlog
     }
   }
 }
-
 
 --after index creation
 
