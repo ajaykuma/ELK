@@ -7,9 +7,9 @@ start_time=$(date +%s)
 
 echo "cleaning old data"
 
-rm -rf cluster-configs/Node1/data cluster-configs/Node1/logs/* \
-rm -rf cluster-configs/Node2/data cluster-configs/Node2/logs/* \
-rm -rf cluster-configs/Node2/data cluster-configs/Node2/logs/* 
+rm -rf elasticsearch/cluster-configs/Node1/data elasticsearch/cluster-configs/Node1/logs/* \
+rm -rf elasticsearch/cluster-configs/Node2/data elasticsearch/cluster-configs/Node2/logs/* \
+rm -rf elasticsearch/cluster-configs/Node3/data elasticsearch/cluster-configs/Node3/logs/* 
 
 ES_PATH_CONF=cluster-configs/Node1 elasticsearch > node1_nsec.log 2>&1 &
 
