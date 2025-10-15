@@ -34,11 +34,11 @@ node.name: node1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: cluster-configs/Node1/data
+path.data: /home/hdu/cluster-configs/Node1/data
 #
 # Path to log files:
 #
-path.logs: cluster-configs/Node1/logs
+path.logs: /home/hdu/cluster-configs/Node1/logs
 #
 # ----------------------------------- Memory -----------------------------------
 #
