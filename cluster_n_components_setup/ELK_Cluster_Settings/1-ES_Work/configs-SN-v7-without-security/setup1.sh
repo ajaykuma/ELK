@@ -6,11 +6,11 @@ cd /home/hdu
 start_time=$(date +%s)
 
 echo "cleaning old data"
-rm -rf /home/hdu/elasticsearch/cluster-configs
-rm -rf /home/hdu/elasticsearch/logs/*
-rm -rf /home/hdu/cluster-configs/Node1/data /home/hdu/cluster-configs/Node1/logs/* \
-rm -rf /home/hdu/cluster-configs/Node2/data /home/hdu/cluster-configs/Node2/logs/* \
-rm -rf /home/hdu/cluster-configs/Node3/data /home/hdu/cluster-configs/Node3/logs/* 
+#rm -rf /home/hdu/elasticsearch/cluster-configs
+#rm -rf /home/hdu/elasticsearch/logs/*
+#rm -rf /home/hdu/cluster-configs/Node1/data /home/hdu/cluster-configs/Node1/logs/* \
+#rm -rf /home/hdu/cluster-configs/Node2/data /home/hdu/cluster-configs/Node2/logs/* \
+#rm -rf /home/hdu/cluster-configs/Node3/data /home/hdu/cluster-configs/Node3/logs/* 
 
 ES_PATH_CONF=cluster-configs/Node1 elasticsearch > node1_nsec.log 2>&1 &
 
