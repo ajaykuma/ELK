@@ -220,6 +220,45 @@ POST /_reindex
 }
 
 --Test analyzer
+
+GET customers2_new/_search
+{
+  "query": {
+    "term": {
+      "address.city": {
+        "value": "littleton"
+      }
+    }
+  }
+}
+
+GET recipes/_search
+{
+  "query": {
+    "match_phrase": {
+      "ingredients": "Beef Chuck"
+    }
+  }
+}
+
+GET recipes/_search
+{
+  "query": {
+    "match_phrase": {
+      "ingredients": "Beef Roast"
+    }
+  }
+}
+
+GET recipes/_search
+{
+  "query": {
+    "match": {
+      "cookTime": "PT*"
+    }
+  }
+}
+
 ---------------------
 11.
 GET /ecommerce/_search?q=*
