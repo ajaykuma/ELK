@@ -220,7 +220,7 @@ POST /_reindex
 }
 
 --Test analyzer
-
+------------------------------------
 GET customers2_new/_search
 {
   "query": {
