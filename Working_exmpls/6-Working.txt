@@ -317,6 +317,79 @@ PUT /german_example
   }
 }
 
+DELETE german_example
+
+--creating index with mappings and using specific analyzer
+PUT /german_example
+{
+  "mappings": {
+
+          "properties": {
+             "name": {
+                "type": "text"
+         },
+         "price": {
+           "type": "double"
+         },
+         "description": {
+            "type": "text",
+            "analyzer": "rebuilt_german"
+         },
+         "status": {
+            "type": "text"
+         },
+         "quantity": {
+           "type": "integer"
+         },
+         "categories": {
+            "type": "nested",
+            "properties": {
+              "name": {
+                "type": "text"
+                        },
+           "quantity": {
+              "type":"integer"}
+         }
+        },
+        "tags": {
+           "type": "text",
+           "analyzer": "german"
+         }
+}
+
+},
+  "settings": {
+    "analysis": {
+      "filter": {
+        "german_stop": {
+          "type":       "stop",
+          "stopwords":  "_german_" 
+        },
+        "german_keywords": {
+          "type":       "keyword_marker",
+          "keywords":   ["Beispiel"] 
+        },
+        "german_stemmer": {
+          "type":       "stemmer",
+          "language":   "light_german"
+        }
+      },
+      "analyzer": {
+        "rebuilt_german": {
+          "tokenizer":  "standard",
+          "filter": [
+            "lowercase",
+            "german_stop",
+            "german_keywords",
+            "german_normalization",
+            "german_stemmer"
+          ]
+        }
+      }
+    }
+  }
+}
+
 POST _analyze
 {
   "analyzer": "german",
