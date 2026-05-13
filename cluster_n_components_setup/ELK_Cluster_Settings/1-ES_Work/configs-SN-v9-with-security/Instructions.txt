@@ -23,12 +23,10 @@ Password for the elastic user (reset with `bin/elasticsearch-reset-password -u e
   peRqb9fiE24NZbe*dIRJ
 
 HTTP CA certificate SHA-256 fingerprint:
-  
 
 Configure Kibana to use this cluster:
 • Run Kibana and click the configuration link in the terminal when Kibana starts.
-• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
-  
+• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes): 
 
 Configure other nodes to join this cluster:
 • On this node:
@@ -67,7 +65,6 @@ adding nodes
 on Node1:
 --Generate token
 elasticsearch-create-enrollment-token -s node
-
 
 --start other nodes
 --cluster-configs2 contains configs to start another node using a different port

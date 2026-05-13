@@ -30,11 +30,11 @@ node.attr.rack: r1
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /home/hdu/cluster-configs-2/data
+path.data: /home/hdu/cluster-configs/Node2/data
 #
 # Path to log files:
 #
-path.logs: /home/hdu/cluster-configs-2/logs
+path.logs: /home/hdu/cluster-configs/Node2/logs
 #
 # ----------------------------------- Memory -----------------------------------
 #
@@ -75,7 +75,6 @@ node.roles: [master,data]
 #
 # Bootstrap the cluster using an initial set of master-eligible nodes:
 #
-#cluster.initial_master_nodes: ["node1"]
 #cluster.initial_master_nodes:
 #  - node1
   
@@ -89,53 +88,3 @@ node.roles: [master,data]
 #
 #action.destructive_requires_name: false
 
-#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
-#
-# The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 07:47:59
-#
-# --------------------------------------------------------------------------------
-
-#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
-#
-# The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 09:11:45
-#
-# --------------------------------------------------------------------------------
-
-
-#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
-#
-# The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 09:48:50
-#
-# --------------------------------------------------------------------------------
-
-
-#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
-#
-# The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 03-10-2025 15:03:48
-#
-# --------------------------------------------------------------------------------
-
-# Enable security features
-xpack.security.enabled: true
-
-xpack.security.enrollment.enabled: true
-
-# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
-xpack.security.http.ssl:
-  enabled: true
-  keystore.path: certs/http.p12
-
-# Enable encryption and mutual authentication between cluster nodes
-xpack.security.transport.ssl:
-  enabled: true
-  verification_mode: certificate
-  keystore.path: certs/transport.p12
-  truststore.path: certs/transport.p12
-# Discover existing nodes in the cluster
-discovery.seed_hosts: ["127.0.0.1:9300"]
-
-#----------------------- END SECURITY AUTO CONFIGURATION -------------------------
