@@ -292,6 +292,35 @@ eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2
 username: elastic
 pswd: as generated above..
 
+Further settings:
+hdu@mc1:~$ kibana-encryption-keys generate
+Kibana is currently running with legacy OpenSSL providers enabled! For details and instructions on
+                     how to disable see https://www.elastic.co/guide/en/kibana/8.19/production.html#openssl-legacy-provider
+## Kibana Encryption Key Generation Utility
+
+The 'generate' command guides you through the process of setting encryption keys for:
+
+xpack.encryptedSavedObjects.encryptionKey
+    Used to encrypt stored objects such as dashboards and visualizations
+    https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
+
+xpack.reporting.encryptionKey
+    Used to encrypt saved reports
+    https://www.elastic.co/guide/en/kibana/current/reporting-settings-kb.html#general-reporting-settings
+
+xpack.security.encryptionKey
+    Used to encrypt session information
+    https://www.elastic.co/guide/en/kibana/current/security-settings-kb.html#security-session-and-cookie-settings
+
+
+Already defined settings are ignored and can be regenerated using the --force flag.  Check the documentation links for 
+instructions on how to rotate encryption keys.
+Definitions should be set in the kibana.yml used configure Kibana.
+
+Add in kibana.yml
+xpack.encryptedSavedObjects.encryptionKey: 1acf7b5357a4edb30921d46e6bf3cd4d
+xpack.reporting.encryptionKey: b3cd3158429b11e505359d25f33972dd
+xpack.security.encryptionKey: efc779c8477020cf710f44c55f695a51
 
 From command line:
 curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:9_W6d34GiGU8gKoZfLlO
@@ -313,8 +342,7 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 10.156.0.3           26          92   5    0.01    0.08     0.25 dm        -      node1
 
 
-
-
+------------------------
 
 
 

@@ -401,8 +401,8 @@ GET system_logs/_doc/7001
 GET system_logs/_count
 
 #all actions processed independently even if one fails
-POST /system_logs/_bulk
-POST /_bulk
+#POST /system_logs/_bulk
+#POST /_bulk
 
 #cross-index bulk example
 POST /_bulk

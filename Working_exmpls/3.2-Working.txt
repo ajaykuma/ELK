@@ -5,14 +5,21 @@ cd datasets
 #from command line or dev tools
 --Using curl and reading from JSON
 --check if products.json esists and if so , skip creation and use curl command
+<data in Bulk API NDJSON format>
 --create a json 'products.json'
 { "index" : { "_index" : "products", "_id" : "1" } }
 { "title" : "Nike Running Shoes" }
 { "index" : { "_index" : "products", "_id" : "2" } }
 { "title" : "Adidas Basketball Shoes" }
 
---use curl command
-curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @products.json
+--use curl command (without security)
+#curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @products.json
+
+curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+  -X POST "https://localhost:9200/products/_bulk" \
+  -H "Content-Type: application/x-ndjson" \
+  -k \
+  --data-binary @datasets/products.json
 
 --edit json and remove _id
 { "index" : { "_index" : "products"} }
@@ -21,7 +28,22 @@ curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk'
 { "title" : "Adidas Basketball Shoes" }
 
 --use curl command
-curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @products.json
+curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+  -X POST "https://localhost:9200/products/_bulk" \
+  -H "Content-Type: application/x-ndjson" \
+  -k \
+  --data-binary @datasets/products.json
+
+--or directly using data with curl
+curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+  -X POST "https://localhost:9200/_bulk" \
+  -H "Content-Type: application/x-ndjson" \
+  -k \
+  --data-binary '
+{ "index" : { "_index" : "products"} }
+{ "title" : "Nike Running Shoes" }
+{ "index" : { "_index" : "products"} }
+{ "title" : "Adidas Basketball Shoes" }'
 
 --query the index
 GET _cat/indices?v
@@ -33,9 +55,10 @@ GET products/_search
   }
 }
 
-or using curl
-curl -XGET "http://localhost:9200/products/_search?pretty" \
+--or using curl
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X GET "https://localhost:9200/products/_search?pretty" \
      -H "Content-Type: application/json" \
+     -k \
      -d '{
        "query": {
          "match_all": {}
@@ -46,7 +69,7 @@ curl -XGET "http://localhost:9200/products/_search?pretty" \
 Similarly
 
 --create index with specific # of shards and replicas (to avoid default settings)
-
+--from dev tools
 PUT /recipes
 {
   "settings": {
@@ -64,8 +87,6 @@ PUT /recipes
 { "index" : { "_index" : "recipes"}
 {"name": "Pasta with Pesto Cream Sauce", "ingredients": "3/4 cups Fresh Basil Leaves\n1/2 cup Grated Parmesan Cheese\n3 Tablespoons Pine Nuts\n2 cloves Garlic, Peeled\n Salt And Pepper, to taste\n1/3 cup Extra Virgin Olive Oil\n1/2 cup Heavy Cream\n2 Tablespoons Butter\n1/4 cup Grated Parmesan (additional)\n12 ounces, weight Pasta (cavitappi, Fusili, Etc.)\n2 whole Tomatoes, Diced", "url": "http://thepioneerwoman.com/cooking/2011/06/pasta-with-pesto-cream-sauce/", "image": "http://static.thepioneerwoman.com/cooking/files/2011/06/pesto.jpg", "cookTime": "PT10M", "recipeYield": "8", "datePublished": "2011-06-06", "prepTime": "PT6M", "description": "I finally have basil in my garden. Basil I can use. This is a huge development.     I had no basil during the winter. None. G..."}
 
-curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes.json
-
 GET recipes/_search
 {
   "query": {
@@ -73,19 +94,28 @@ GET recipes/_search
   }
 }
 
---for more data
-curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes2.json
+--for more data(without security)
+curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes.json
 
-curl -XGET "http://localhost:9200/recipes/_search?pretty" \
+--with security
+curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+  -X POST "https://localhost:9200/recipes/_bulk" \
+  -H "Content-Type: application/x-ndjson" \
+  -k \
+  --data-binary @datasets/recipes.json
+
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X GET "https://localhost:9200/recipes/_search?pretty" \
      -H "Content-Type: application/json" \
+     -k \
      -d '{
        "query": {
          "match_all": {}
        }
      }'
 
-curl -XGET "http://localhost:9200/recipes/_count" \
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X GET "https://localhost:9200/recipes/_count?pretty" \
      -H "Content-Type: application/json" \
+     -k \
      -d '{
        "query": {
          "match_all": {}
@@ -94,18 +124,19 @@ curl -XGET "http://localhost:9200/recipes/_count" \
 
 --or from dev console
 POST _bulk
-{ "index" : { "_index" : "recipes2", "_id" : "1" } }
+{ "index" : { "_index" : "recipes", "_id" : "1" } }
 {"name": "Easter Leftover Sandwich", "ingredients": "12 whole Hard Boiled Eggs\n1/2 cup Mayonnaise\n3 Tablespoons Grainy Dijon Mustard\n Salt And Pepper, to taste\n Several Dashes Worcestershire Sauce\n Leftover Baked Ham, Sliced\n Kaiser Rolls Or Other Bread\n Extra Mayonnaise And Dijon, For Spreading\n Swiss Cheese Or Other Cheese Slices\n Thinly Sliced Red Onion\n Avocado Slices\n Sliced Tomatoes\n Lettuce, Spinach, Or Arugula", "url": "http://thepioneerwoman.com/cooking/2013/04/easter-leftover-sandwich/", "image": "http://static.thepioneerwoman.com/cooking/files/2013/03/leftoversandwich.jpg", "cookTime": "PT", "recipeYield": "8", "datePublished": "2013-04-01", "prepTime": "PT15M", "description": "Got leftover Easter eggs?    Got leftover Easter ham?    Got a hearty appetite?    Good! You've come to the right place!    I..."}
-{ "index" : { "_index" : "recipes2", "_id" : "2" } }
+{ "index" : { "_index" : "recipes", "_id" : "2" } }
 {"name": "Pasta with Pesto Cream Sauce", "ingredients": "3/4 cups Fresh Basil Leaves\n1/2 cup Grated Parmesan Cheese\n3 Tablespoons Pine Nuts\n2 cloves Garlic, Peeled\n Salt And Pepper, to taste\n1/3 cup Extra Virgin Olive Oil\n1/2 cup Heavy Cream\n2 Tablespoons Butter\n1/4 cup Grated Parmesan (additional)\n12 ounces, weight Pasta (cavitappi, Fusili, Etc.)\n2 whole Tomatoes, Diced", "url": "http://thepioneerwoman.com/cooking/2011/06/pasta-with-pesto-cream-sauce/", "image": "http://static.thepioneerwoman.com/cooking/files/2011/06/pesto.jpg", "cookTime": "PT10M", "recipeYield": "8", "datePublished": "2011-06-06", "prepTime": "PT6M", "description": "I finally have basil in my garden. Basil I can use. This is a huge development.     I had no basil during the winter. None. G..."}
 
 --or inserting without _id
 POST _bulk
-{ "index" : { "_index" : "recipes2"} }
+{ "index" : { "_index" : "recipes"} }
 {"name": "Easter Leftover Sandwich", "ingredients": "12 whole Hard Boiled Eggs\n1/2 cup Mayonnaise\n3 Tablespoons Grainy Dijon Mustard\n Salt And Pepper, to taste\n Several Dashes Worcestershire Sauce\n Leftover Baked Ham, Sliced\n Kaiser Rolls Or Other Bread\n Extra Mayonnaise And Dijon, For Spreading\n Swiss Cheese Or Other Cheese Slices\n Thinly Sliced Red Onion\n Avocado Slices\n Sliced Tomatoes\n Lettuce, Spinach, Or Arugula", "url": "http://thepioneerwoman.com/cooking/2013/04/easter-leftover-sandwich/", "image": "http://static.thepioneerwoman.com/cooking/files/2013/03/leftoversandwich.jpg", "cookTime": "PT", "recipeYield": "8", "datePublished": "2013-04-01", "prepTime": "PT15M", "description": "Got leftover Easter eggs?    Got leftover Easter ham?    Got a hearty appetite?    Good! You've come to the right place!    I..."}
 
 ----------------
---create index
+#Similarly we can use customers.json file
+#--create index
 
 PUT /customers
 {
@@ -119,8 +150,6 @@ PUT /customers
 POST _bulk
 { "create" : { "_index" : "customers", "_type" : "_doc", "_id" : "15" } }
 {"title" : "Ms","first" : "Phyllis","last" : "Grey","email" : "pgray87@studio3t.com","dob" : "1979-07-07T15:21:30.000+0000","address" : {"street" : {"name" : "Bobwhite","suffix" : "Circle","number" : "37"},"city" : "Orlando","state" : "Florida","zip_code" : 32808},"user_name" : "pgray87","package" : "Premium","prio_support" : true,"registered_on" : "2017-09-21T00:00:00.000+0000","transactions" : 8,"pet" : "manatee","number_pets" : 4,"Studio_3T_edition" : "Core"}
-
-POST _bulk
 { "create" : { "_index" : "customers", "_type" : "_doc", "_id" : "17" } }
 {"title" : "Ms","first" : "Phyllis","last" : "Grey","email" : "pgray87@studio3t.com","dob" : "1979-07-07T15:21:30.000+0000","address" : {"street" : {"name" : "Bobwhite","suffix" : "Circle","number" : "37"},"city" : "Orlando","state" : "Florida","zip_code" : 32808},"user_name" : "pgray87","package" : "Premium","prio_support" : true,"registered_on" : "2017-09-21T00:00:00.000+0000","transactions" : 8,"pet" : "manatee","number_pets" : 4,"Studio_3T_edition" : "Core"}
 { "create" : { "_index" : "customers", "_type" : "_doc", "_id" : "18" } }
@@ -135,12 +164,30 @@ jq -c '.' customers2.json > customers2_compact.json
 
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @customers2_compact.json
 
+-------------------------
 #working with csv
-run csvimport.sh
+#run csvimport.sh
 
-chmod +x csvimport.sh
+#chmod +x csvimport.sh
 
-./csvimport.sh
+#./csvimport.sh
+--or directly use the bankdata_bulk.json file
+
+--create index
+PUT /bankdata
+{
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
+
+curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+  -X POST "https://localhost:9200/bankdata/_bulk" \
+  -H "Content-Type: application/x-ndjson" \
+  -k \
+  --data-binary @datasets/bankdata_bulk.json
 
 --From Dev tools
 GET _cat/indices/bankdata?v

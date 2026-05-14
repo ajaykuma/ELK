@@ -6,17 +6,17 @@
 #using logstash to send csv file to ES and create index automatically
 --Download Bank_full.csv from https://github.com/ajaykuma/datasets_for_work
 
-#when running logstash check if your logstash is in /etc/logstash or in /usr/local/logstash and
+#when running logstash check if your logstash is in /etc/logstash or in /home/hdu/logstash and
 choose the one you prefer and have configured.
 
 --if conf file not copied and building on your own
 
-$vi /usr/local/logstash/conf.d/logstash_bankcsv.conf
+$vi /home/hdu/logstash/conf.d/logstash_bankcsv.conf
 
 #paste this content 
 input {
      file {
-      path => "<path>/cars.csv"
+      path => "<path>/Bank_full.csv"
       start_position => "beginning"
       sincedb_path => "/dev/null"
       }
@@ -36,7 +36,7 @@ filter {
 
 output {
   elasticsearch {
-    hosts => ["http://c1:9200","http://c2:9200","http://c3:9200"]
+    hosts => ["http://localhost:9200","http://localhost:9201","http://localhost:9202"]
     index => "bankdata"
   }
 
@@ -53,7 +53,7 @@ output {
 
 
 --build index with desired shards and replicas before pushing data (or index will be created with default settings)
-PUT /bankdata
+PUT /bankdata2
 {
   "settings": {
     "number_of_shards": 3
@@ -62,10 +62,12 @@ PUT /bankdata
   }
 }
 
-GET /_cat/indices/bankdata?v
+GET /_cat/indices/bankdata2?v
 
 
-$logstash --path.settings /usr/local/logstash/ -f /usr/local/logstash/conf.d/logstash_bankcsv.conf
+$logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bankcsv-secure.conf
 
 --check data
+
+
 

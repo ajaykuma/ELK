@@ -48,7 +48,7 @@ vi /etc/kibana/config/kibana.yml
 --Download logstash-7.8 from elastic.co
 --Download logstash from https://opensearch.org/downloads.html
 
-$cd /usr/local
+$cd /home/hdu
 $sudo tar -xvf /home/hdu/Downloads/logstash-7.8.0.tar.gz
 OR
 $sudo tar -xvf /home/hdu/Downloads/logstash-oss-with-opensearch-output-plugin-8.6.1-linux-x64.tar.gz
@@ -65,21 +65,23 @@ $cd
 $vi .bashrc
 
 --update .bashrc
-export LOGSTASH_HOME=/usr/local/logstash
+export LOGSTASH_HOME=/home/hdu/logstash
 export PATH=$PATH:$LOGSTASH_HOME/bin
 
 --refresh .bashrc
 source .bashrc
 
-$cd /usr/local/logstash
+$cd /home/hdu/logstash
 $mkdir conf.d
 
---copy the *.conf files from MyconfigsLS/conf.d/* into /usr/local/logstash/conf.d/
+--copy the *.conf files from MyconfigsLS/conf.d/* into /home/hdu/logstash/conf.d/
 
 --start editing files as per your requirement
 
 --to run logstash
-logstash --path.settings /usr/local/logstash -f /usr/local/logstash/conf.d/logstash_simple.conf
+logstash --path.settings /home/hdu/logstash -f /home/hdu/logstash/conf.d/logstash_simple.conf
+
+--test by typing in -- hello
 
 --look into files in 'MyConfigsLS' for better understanding
 

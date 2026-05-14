@@ -1,0 +1,287 @@
+#paths may have changed, read through and recheck in git 
+#conf file for this exists in 'MyConfigsLS'
+
+>>MyConfigsLS/conf.d/logstash_bidata-secure.conf
+
+#using logstash to send pdf file to ES and create index automatically
+--get pdf datasets from datasets folder.
+
+#when running logstash check if your logstash is in /etc/logstash or in /home/hdu/logstash and
+choose the one you prefer and have configured.
+
+#install
+elasticsearch-plugin install ingest-attachment
+
+#if already installed
+then check
+curl -k -u elastic:9_W6d34GiGU8gKoZfLlO \
+https://localhost:9200/_nodes/plugins?pretty
+
+#Create PDF ingest pipeline
+#in kibana: dev
+PUT _ingest/pipeline/pdf-pipeline
+{
+  "description": "Extract PDF content",
+  "processors": [
+    {
+      "attachment": {
+        "field": "data",
+        "target_field": "attachment",
+        "indexed_chars": -1
+      }
+    },
+    {
+      "remove": {
+        "field": "data"
+      }
+    }
+  ]
+}
+
+--create dedicated index
+PUT pdf-index
+{
+  "mappings": {
+    "properties": {
+      "filename": {
+        "type": "keyword"
+      },
+      "attachment.content": {
+        "type": "text"
+      },
+      "attachment.title": {
+        "type": "text"
+      },
+      "attachment.author": {
+        "type": "keyword"
+      },
+      "upload_date": {
+        "type": "date"
+      }
+    }
+  }
+}
+
+
+--if conf file not copied and building on your own
+
+$vi /home/hdu/logstash/conf.d/logstash_bidata-secure.conf
+
+#paste this content 
+input {
+  file {
+    path => "/home/hdu/datasets/pdfs/*.pdf"
+    start_position => "beginning"
+    sincedb_path => "/dev/null"
+    mode => "read"
+  }
+}
+
+filter {
+
+  ruby {
+    code => '
+      require "base64"
+
+      path = event.get("path")
+
+      pdf_data = File.open(path, "rb") { |f| f.read }
+
+      encoded = Base64.strict_encode64(pdf_data)
+
+      event.set("data", encoded)
+    '
+  }
+
+  mutate {
+    add_field => {
+      "filename" => "%{[path]}"
+    }
+  }
+
+}
+
+output {
+
+  elasticsearch {
+    hosts => [
+      "https://localhost:9200",
+      "https://localhost:9201",
+      "https://localhost:9202"
+    ]
+
+    user => "elastic"
+    password => "9_W6d34GiGU8gKoZfLlO"
+
+    ssl_enabled => true
+
+    ssl_certificate_authorities => [
+      "/home/hdu/elasticsearch/config/certs/http_ca.crt"
+    ]
+
+    index => "pdf-index"
+
+    pipeline => "pdf-pipeline"
+  }
+
+  stdout { codec => rubydebug }
+
+}
+-----------
+
+#note** Make sure elasticsearch & kibana service is running already
+
+#start logstash pointing to this config file
+#change paths according to your setup
+
+
+--If needed, build index with desired shards and replicas before pushing data (or index will be created with default settings)
+PUT /pdf-index
+{
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
+
+GET /_cat/indices/pdf-index?v
+
+
+$logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bidata-secure.conf
+
+--check data
+
+From BI approaches.pdf, ES will extract
+Business Intelligence Concepts and Approaches
+management decision making
+data warehouse
+OLAP systems
+competitive advantage
+
+From sample_patient.pdf
+Costochondritis
+chest pain
+ibuprofen
+migraines
+Pap smear
+
+------------
+Queries:
+GET pdf-index/_search
+{
+  "query": {
+    "match": {
+      "attachment.content": "business intelligence"
+    }
+  }
+}
+
+--phrase search
+GET pdf-index/_search
+{
+  "query": {
+    "match_phrase": {
+      "attachment.content": "management decision making"
+    }
+  }
+}
+
+--multi-word search
+GET pdf-index/_search
+{
+  "query": {
+    "match": {
+      "attachment.content": "chest pain sternum"
+    }
+  }
+}
+
+--boolean query
+GET pdf-index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "attachment.content": "OLAP"
+          }
+        },
+        {
+          "match": {
+            "attachment.content": "data warehouse"
+          }
+        }
+      ]
+    }
+  }
+}
+
+--wildcard query
+GET pdf-index/_search
+{
+  "query": {
+    "wildcard": {
+      "attachment.content": {
+        "value": "intelligen*"
+      }
+    }
+  }
+}
+
+--fuzzy search
+GET pdf-index/_search
+{
+  "query": {
+    "fuzzy": {
+      "attachment.content": {
+        "value": "bussiness",
+        "fuzziness": "AUTO"
+      }
+    }
+  }
+}
+
+--highlight matching text
+GET pdf-index/_search
+{
+  "query": {
+    "match": {
+      "attachment.content": "costochondritis"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "attachment.content": {}
+    }
+  }
+}
+
+--search by filename
+GET pdf-index/_search
+{
+  "query": {
+    "wildcard": {
+      "filename": "*patient*"
+    }
+  }
+}
+
+--aggregation
+GET pdf-index/_search
+{
+  "size": 0,
+  "aggs": {
+    "common_terms": {
+      "terms": {
+        "field": "attachment.language"
+      }
+    }
+  }
+}
+
+
+
+
+
