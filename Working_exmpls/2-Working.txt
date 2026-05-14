@@ -9,6 +9,8 @@ PUT /ecommerce
   }
 }
 
+GET /_cat/indices/ecommerce?v
+
 #1
 changing settings of already created index
 
@@ -19,6 +21,8 @@ PUT /ecommerce/_settings
   "auto_expand_replicas": false
 }
 }
+
+GET /_cat/indices/ecommerce?v
 
 #trying to update shards after index is created:
 PUT /ecommerce/_settings
@@ -42,6 +46,14 @@ results in error:
   },
   "status" : 400
 }
+
+or error> (in newer version: say in our case: 8.19)
+"type": "illegal_argument_exception",
+        "reason": "Can't update non dynamic settings [[index.number_of_shards]] for open indices [[ecommerce/4pHEZ1UKQU6cI-FNPXE-qw]] 
+unless the `reopen` query parameter is set to true. Alternatively, close the indices, apply the settings changes, and reopen the indices"
+
+As number_of_shards is a static setting.
+Refer : xtra-1-editing_settings.txt
 
 #checking specific i.e. our index
 GET /_cat/indices/ecommerce?v
@@ -100,12 +112,13 @@ PUT /ecommerce2
 }
 
 #getting details of index
-GET /ecommerce
+GET /ecommerce2
+GET ecommerce2/_mapping
 GET /_cat/indices?v
-GET /_cat/shards
-
-#checking indexes
 GET /_cat/indices/ecommer*?v
+GET /_cat/shards
+GET /_cat/shards/ecommerce*?v
+
 --------------------
 #checking other details
 
@@ -145,8 +158,10 @@ GET ecommerce/_search
 }
 
 OR #to verify if this worked
-#Click on 'Management>Index Patterns> and create an index pattern'. [Just enter your index name]
-#Now click on 'discover' and in search(on top) ,search for a document
+#Click on 'Management> stack management > index management > 
+(old version) Index Patterns> and create an index pattern'. [Just enter your index name]
+   #Now click on 'discover' and in search(on top) ,search for a document
+(newer version) Index Management shows indices > click on 'ecommerce' > discover
 
 #trying to update
 PUT /ecommerce/_doc/1001
@@ -161,6 +176,8 @@ GET ecommerce/_search
         "match_all": {}
     }
 }
+
+or check in discover (refresh)
 
 #notice as per above command all other key-values were deleted.
 #delete the document

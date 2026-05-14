@@ -69,8 +69,6 @@ PUT /ecommerce2/_bulk
 {"name": "why elasticsearch is Awesome","price":"101.00","description":"This book is all about elasticsearch!","status":"active","quantity":12,"categories":[{"name":"Software"}],"tags":["elasticsearch","programming"]}
 
 
-
-
 GET /_cat/indices/ecommerce*?v
 
 GET ecommerce2/_search
@@ -161,3 +159,292 @@ GET ecommerce2/_doc/101?routing=title
 #check shard allocation and if documents increase in one particular shard
 GET /_cat/shards/ecommerce2?v
 
+-----------------
+--Creating an index that tracks errors
+PUT /system_logs
+{
+  "mappings": {
+    "properties": {
+      "event_name": {
+        "type": "text"
+      },
+      "severity": {
+        "type": "keyword"
+      },
+      "description": {
+        "type": "text"
+      },
+      "error_code": {
+        "type": "keyword"
+      },
+      "service": {
+        "type": "keyword"
+      },
+      "host": {
+        "type": "keyword"
+      },
+      "environment": {
+        "type": "keyword"
+      },
+      "occurrences": {
+        "type": "integer"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "categories": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          }
+        }
+      },
+      "tags": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1
+  }
+}
+
+--Sample data
+POST /system_logs/_bulk
+{"index":{"_id":"5001"}}
+{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5002"}}
+{"event_name":"HTTP 502 Gateway Error","severity":"warning","description":"Nginx upstream service returned 502 bad gateway","error_code":"HTTP_502","service":"api-gateway","host":"prod-nginx-02","environment":"production","occurrences":18,"timestamp":"2026-05-14T10:20:00","categories":[{"name":"Networking"}],"tags":["nginx","gateway","http"]}
+{"index":{"_id":"5003"}}
+{"event_name":"Elasticsearch Shard Failure","severity":"critical","description":"Primary shard allocation failed after cluster restart","error_code":"ES_SHARD_001","service":"elasticsearch-cluster","host":"es-node-03","environment":"production","occurrences":7,"timestamp":"2026-05-14T10:25:00","categories":[{"name":"ELK"}],"tags":["elasticsearch","shards","cluster"]}
+{"index":{"_id":"5004"}}
+{"event_name":"JWT Authentication Failure","severity":"warning","description":"JWT token validation failed for incoming API request","error_code":"AUTH_401","service":"auth-service","host":"auth-node-01","environment":"staging","occurrences":63,"timestamp":"2026-05-14T10:28:00","categories":[{"name":"Security"}],"tags":["jwt","authentication","security"]}
+{"index":{"_id":"5005"}}
+{"event_name":"Kafka Consumer Lag","severity":"critical","description":"Consumer lag exceeded threshold in transaction topic","error_code":"KAFKA_LAG_01","service":"kafka-consumer","host":"kafka-node-02","environment":"production","occurrences":25,"timestamp":"2026-05-14T10:30:00","categories":[{"name":"Streaming"}],"tags":["kafka","consumer","lag"]}
+
+#find critical errors
+GET /system_logs/_search
+{
+  "query": {
+    "term": {
+      "severity": "critical"
+    }
+  }
+}
+
+#find errors from production only
+GET /system_logs/_search
+{
+  "query": {
+    "term": {
+      "environment": "production"
+    }
+  }
+}
+
+#find auth failures
+GET /system_logs/_search
+{
+  "query": {
+    "match": {
+      "description": "authentication jwt token failed"
+    }
+  }
+}
+
+--further for
+repeated log patterns
+different services
+realistic operational data
+searchable text
+categories + tags
+duplicate/repeated event types for aggregation practice
+
+POST /system_logs/_bulk
+{"index":{"_id":"6001"}}
+{"event_name":"SQL Connection Timeout","description":"MySQL connection timeout after 30 seconds from order service","severity":"critical","error_code":"MYSQL_504","service":"order-service","host":"prod-app-01","environment":"production","occurrences":41,"categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"6002"}}
+{"event_name":"ORA-00933 SQL Syntax Error","description":"Oracle returned ORA-00933 SQL command not properly ended","severity":"warning","error_code":"ORA_00933","service":"reporting-service","host":"oracle-db-01","environment":"production","occurrences":12,"categories":[{"name":"Oracle"}],"tags":["oracle","sql","syntax"]}
+{"index":{"_id":"6003"}}
+{"event_name":"Elasticsearch Shard Failure","description":"Primary shard allocation failed after node restart","severity":"critical","error_code":"ES_SHARD_01","service":"elasticsearch-cluster","host":"es-node-03","environment":"production","occurrences":8,"categories":[{"name":"ELK"}],"tags":["elasticsearch","shards","cluster"]}
+{"index":{"_id":"6004"}}
+{"event_name":"Kafka Consumer Lag","description":"Consumer lag exceeded threshold in payment topic","severity":"warning","error_code":"KAFKA_LAG_01","service":"kafka-consumer","host":"kafka-node-02","environment":"staging","occurrences":67,"categories":[{"name":"Streaming"}],"tags":["kafka","consumer","lag"]}
+{"index":{"_id":"6005"}}
+{"event_name":"HTTP 502 Gateway Error","description":"Nginx upstream service returned 502 bad gateway","severity":"critical","error_code":"HTTP_502","service":"api-gateway","host":"nginx-prod-01","environment":"production","occurrences":29,"categories":[{"name":"Networking"}],"tags":["nginx","gateway","http"]}
+{"index":{"_id":"6006"}}
+{"event_name":"JVM Heap Memory Leak","description":"Application exceeded JVM heap memory threshold","severity":"critical","error_code":"JVM_HEAP_01","service":"inventory-service","host":"java-app-01","environment":"production","occurrences":5,"categories":[{"name":"Java"}],"tags":["jvm","heap","memory"]}
+{"index":{"_id":"6007"}}
+{"event_name":"Logstash Pipeline Failure","description":"Logstash grok parsing failed for apache logs","severity":"warning","error_code":"LOGSTASH_01","service":"logstash","host":"logstash-node-01","environment":"staging","occurrences":14,"categories":[{"name":"ELK"}],"tags":["logstash","pipeline","grok"]}
+{"index":{"_id":"6008"}}
+{"event_name":"PostgreSQL Deadlock Detected","description":"Deadlock detected while updating transaction table","severity":"critical","error_code":"PG_DEADLOCK","service":"payment-service","host":"postgres-db-01","environment":"production","occurrences":7,"categories":[{"name":"PostgreSQL"}],"tags":["postgres","deadlock","database"]}
+{"index":{"_id":"6009"}}
+{"event_name":"Redis Cache Miss Spike","description":"Redis cache miss ratio increased during peak traffic","severity":"warning","error_code":"REDIS_CACHE_01","service":"cache-service","host":"redis-node-01","environment":"production","occurrences":33,"categories":[{"name":"Caching"}],"tags":["redis","cache","performance"]}
+{"index":{"_id":"6010"}}
+{"event_name":"HTTP 401 Unauthorized","description":"JWT token validation failed for API gateway","severity":"warning","error_code":"AUTH_401","service":"auth-service","host":"auth-node-01","environment":"staging","occurrences":52,"categories":[{"name":"Security"}],"tags":["jwt","authentication","security"]}
+{"index":{"_id":"6011"}}
+{"event_name":"Docker Container CrashLoop","description":"Kubernetes pod entered CrashLoopBackOff state","severity":"critical","error_code":"K8S_CRASH_01","service":"user-service","host":"k8s-node-02","environment":"production","occurrences":9,"categories":[{"name":"Containers"}],"tags":["docker","kubernetes","crash"]}
+{"index":{"_id":"6012"}}
+{"event_name":"SSL Handshake Failure","description":"TLS handshake failed between internal microservices","severity":"warning","error_code":"SSL_TLS_01","service":"gateway-service","host":"gateway-node-01","environment":"production","occurrences":11,"categories":[{"name":"Security"}],"tags":["ssl","tls","certificates"]}
+{"index":{"_id":"6013"}}
+{"event_name":"Elasticsearch Shard Failure","description":"Replica shard allocation delayed after cluster recovery","severity":"warning","error_code":"ES_SHARD_02","service":"elasticsearch-cluster","host":"es-node-02","environment":"production","occurrences":6,"categories":[{"name":"ELK"}],"tags":["elasticsearch","replica","cluster"]}
+{"index":{"_id":"6014"}}
+{"event_name":"Kafka Broker Disconnect","description":"Kafka broker disconnected during high throughput ingestion","severity":"critical","error_code":"KAFKA_BROKER_01","service":"kafka-broker","host":"kafka-node-03","environment":"production","occurrences":4,"categories":[{"name":"Streaming"}],"tags":["kafka","broker","streaming"]}
+{"index":{"_id":"6015"}}
+{"event_name":"MySQL Replication Delay","description":"Replication lag detected between primary and replica","severity":"warning","error_code":"MYSQL_REPL_01","service":"mysql-replication","host":"mysql-replica-01","environment":"production","occurrences":19,"categories":[{"name":"Database"}],"tags":["mysql","replication","database"]}
+
+#get critical errors
+GET /system_logs/_search
+{
+  "query": {
+    "term": {
+      "severity": "critical"
+    }
+  }
+}
+
+#top ELK related logs
+GET /system_logs/_search
+{
+  "query": {
+    "nested": {
+      "path": "categories",
+      "query": {
+        "match": {
+          "categories.name": "ELK"
+        }
+      }
+    }
+  }
+}
+
+#find JVM or memory issues
+GET /system_logs/_search
+{
+  "query": {
+    "match": {
+      "description": "heap memory leak"
+    }
+  }
+}
+
+----------------
+##Similar working as we did with ecommerce
+#search all documents with explain
+GET system_logs/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "explain": true
+}
+
+#list indices
+GET /_cat/indices/system_logs*?v
+
+#cluster health
+GET /_cluster/health/system_logs?level=shards
+
+#bulk delete + update
+POST /system_logs/_bulk
+{"delete":{"_id":"6005"}}
+{"update":{"_id":"6003"}}
+{"doc":{"severity":"warning"}}
+
+#bulk delete + insert autogenerated _id
+POST /system_logs/_bulk
+{"delete":{"_id":"6007"}}
+{"index":{}}
+{
+  "event_name":"Node Disk Space Warning",
+  "description":"Disk utilization exceeded 90 percent on Elasticsearch node",
+  "severity":"critical",
+  "error_code":"DISK_001",
+  "service":"elasticsearch-cluster",
+  "host":"es-node-04",
+  "environment":"production",
+  "occurrences":15,
+  "categories":[{"name":"Infrastructure"}],
+  "tags":["disk","storage","cluster"]
+}
+
+#bulk delete + insert with custom _id
+POST /system_logs/_bulk
+{"delete":{"_id":"6012"}}
+{"index":{"_id":"7001"}}
+{
+  "event_name":"TLS Certificate Expired",
+  "description":"Internal TLS certificate expired between microservices",
+  "severity":"critical",
+  "error_code":"TLS_CERT_01",
+  "service":"gateway-service",
+  "host":"gateway-node-03",
+  "environment":"production",
+  "occurrences":9,
+  "categories":[{"name":"Security"}],
+  "tags":["tls","ssl","certificate"]
+}
+
+#count documents
+GET system_logs/_count
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#get document by id
+GET system_logs/_doc/7001
+
+#simple count
+GET system_logs/_count
+
+#all actions processed independently even if one fails
+POST /system_logs/_bulk
+POST /_bulk
+
+#cross-index bulk example
+POST /_bulk
+{"update":{"_id":"6001","_index":"system_logs"}}
+{"doc":{"occurrences":50}}
+
+#list indices
+GET /_cat/indices?v
+
+#get specific document
+GET system_logs/_doc/6001
+
+#cluster health
+GET /_cluster/health/system_logs?level=shards
+
+#routing documents based on service field
+PUT system_logs/_doc/8001?routing=payment-service&refresh=true
+{
+  "event_name":"Payment API Timeout",
+  "description":"Timeout while processing payment transaction",
+  "severity":"critical",
+  "service":"payment-service"
+}
+
+PUT system_logs/_doc/8002?routing=payment-service&refresh=true
+{
+  "event_name":"Payment DB Failure",
+  "description":"Database unavailable during payment processing",
+  "severity":"critical",
+  "service":"payment-service"
+}
+
+PUT system_logs/_doc/8003?routing=payment-service&refresh=true
+{
+  "event_name":"Payment Retry Triggered",
+  "description":"Retry triggered after failed payment attempt",
+  "severity":"warning",
+  "service":"payment-service"
+}
+
+#retrieve routed document
+GET system_logs/_doc/8001?routing=payment-service
+
+#check shard allocation
+GET /_cat/shards/system_logs?v

@@ -25,23 +25,57 @@ PUT /ecommerce
 {
 }
 
-#Here the above command is translated to HTTP request that uses HTTP puts
-#If using curl/connecting to ES in an application  we would have to use fully qualified URL .
-We can find the same , 
-#using the settings icon and 'copy as URL'
-#if we copy the curl request, it will automatically be convereted into required syntax
-
+#Here the above command is translated to HTTP request that uses HTTP put
 #check if index is created by looking for 'acknowledged:true' on right panel
+
+#If using curl/connecting to ES in an application  we would have to use fully qualified URL .
 #if tried using curl command and if index exists:
 
---curl -XPUT "http://a1:9200/ecommerce" -H 'Content-Type: application/json' -d'{}'
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X PUT "https://localhost:9200/ecommerce" \
+-H "Content-Type: application/json" \
+-d '{}' \
+-k
+Response:{"error":{"root_cause":[{"type":"resource_already_exists_exception","reason":"index [ecommerce/7TnhY8HYR1KD9p2arAcEyw] already exists","index_uuid":"7TnhY8HYR1KD9p2arAcEyw","index":"ecommerce"}],"type":"resource_already_exists_exception","reason":"index [ecommerce/7TnhY8HYR1KD9p2arAcEyw] already exists","index_uuid":"7TnhY8HYR1KD9p2arAcEyw","index":"ecommerce"},"status":400}
 
-{"error":{"root_cause":[{"type":"resource_already_exists_exception","reason":"index [ecommerce/FU8FJZC8TK6NyFw-I3Zl_g] already exists","index_uuid":"FU8FJZC8TK6NyFw-I3Zl_g","index":"ecommerce"}],"type":"resource_already_exists_exception","reason":"index [ecommerce/FU8FJZC8TK6NyFw-I3Zl_g] already exists","index_uuid":"FU8FJZC8TK6NyFw-I3Zl_g","index":"ecommerce"},"status":400}
+--try a different name
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X PUT "https://localhost:9200/ecommerce2" -H "Content-Type: application/json" -d '{}' -k
+Response:{"acknowledged":true,"shards_acknowledged":true,"index":"ecommerc2"}
 
+or with mappings/settings
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X PUT "https://localhost:9200/ecommerce3" \
+-H "Content-Type: application/json" \
+-k \
+-d '{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "properties": {
+      "product": { "type": "text" },
+      "price":   { "type": "float" },
+      "category":{ "type": "keyword" }
+    }
+  }
+}'
+
+--verify
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X GET "https://localhost:9200/_cat/indices?v" -k
+curl -u elastic:9_W6d34GiGU8gKoZfLlO -X GET "https://localhost:9200/ecommerce" -k
 ---------------------------------
 #Deleting Index
 3.DELETE /ecommerce
 
 #Test if it was deleted, by listing indexes as in #2
+GET /_cat/indices/ecommerce?v
+
+DELETE /ecommerce2
+DELETE /ecommerce3
+
+or
+
+we could
+DELETE /ecommerce*
+
 
 

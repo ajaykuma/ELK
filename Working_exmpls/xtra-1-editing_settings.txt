@@ -1,0 +1,101 @@
+PUT /ecommerce
+{
+  "settings": {
+    "number_of_shards": 1
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
+
+GET /_cat/indices/ecommerce?v
+
+#trying to update shards after index is created:
+PUT /ecommerce/_settings
+{
+"index":{
+  "number_of_shards":3
+}
+}
+
+results in error:
+{
+  "error" : {
+    "root_cause" : [
+      {
+        "type" : "illegal_argument_exception",
+        "reason" : "Can't update non dynamic settings [[index.number_of_shards]] for open indices [[ecommerce/cwpQleCHR8S0v29GptKQWA]]"
+      }
+    ],
+    "type" : "illegal_argument_exception",
+    "reason" : "Can't update non dynamic settings [[index.number_of_shards]] for open indices [[ecommerce/cwpQleCHR8S0v29GptKQWA]]"
+  },
+  "status" : 400
+}
+
+or error> (in newer version: say in our case: 8.19)
+"type": "illegal_argument_exception",
+        "reason": "Can't update non dynamic settings [[index.number_of_shards]] for open indices [[ecommerce/4pHEZ1UKQU6cI-FNPXE-qw]] 
+unless the `reopen` query parameter is set to true. Alternatively, close the indices, apply the settings changes, and reopen the indices"
+
+As number_of_shards is a static setting.
+
+Option1: 
+Create a new index and reindex data
+curl -u elastic:mypswd -X PUT "https://localhost:9200/ecommerce_v2" \
+-H "Content-Type: application/json" \
+-k \
+-d '{
+  "settings": {
+    "number_of_shards": 3,
+    "number_of_replicas": 1
+  }
+}'
+
+--copy data from old index
+curl -u elastic:mypswd -X POST "https://localhost:9200/_reindex" \
+-H "Content-Type: application/json" \
+-k \
+-d '{
+  "source": {
+    "index": "ecommerce"
+  },
+  "dest": {
+    "index": "ecommerce_v2"
+  }
+}'
+
+--verify
+curl -u elastic:mypswd -X GET "https://localhost:9200/_cat/indices?v" -k
+
+Option2:
+Close index → change setting → reopen
+Some static settings can be changed this way.(may not work for shard settings)
+--close index
+curl -u elastic:mypswd -X POST "https://localhost:9200/ecommerce/_close" -k
+
+--update settings
+curl -u elastic:mypswd -X PUT "https://localhost:9200/ecommerce/_settings" \
+-H "Content-Type: application/json" \
+-k \
+-d '{
+  "index": {
+    "number_of_replicas": 2
+  }
+}'
+
+--reopen
+curl -u elastic:mypswd -X POST "https://localhost:9200/ecommerce/_open" -k
+
+Option 3: (in newer versions)
+Use reopen=true
+
+curl -u elastic:mypswd -X PUT "https://localhost:9200/ecommerce/_settings?reopen=true" \
+-H "Content-Type: application/json" \
+-k \
+-d '{
+  "index": {
+    "number_of_replicas": 2
+  }
+}'
+
+
