@@ -1,0 +1,330 @@
+sudo su
+apt update
+apt install openjdk-21-jdk
+apt install vim
+apt install wget
+su - hdu
+
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.19.0-linux-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/kibana/kibana-8.19.0-linux-x86_64.tar.gz
+
+hdu@mc1:~$ ls
+elasticsearch-8.19.0-linux-x86_64.tar.gz  kibana-8.19.0-linux-x86_64.tar.gz
+
+hdu@mc1:~$ tar -xvf elasticsearch-8.19.0-linux-x86_64.tar.gz
+hdu@mc1:~$ tar -xvf kibana-8.19.0-linux-x86_64.tar.gz
+
+hdu@mc1:~$ ln -s elasticsearch-8.19.0 elasticsearch
+hdu@mc1:~$ ln -s kibana-8.19.0 kibana
+
+Java - /usr/lib/jvm/java-21-openjdk-amd64/
+
+#update .bashrc for hdu user
+vi .bashrc
+
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
+export PATH=$PATH:$JAVA_HOME/bin
+export ELASTICSEARCH_HOME=/home/hdu/elasticsearch
+export PATH=$PATH:$ELASTICSEARCH_HOME/bin
+export KIBANA_HOME=/home/hdu/kibana
+export PATH=$PATH:$KIBANA_HOME/bin
+
+source .bashrc
+
+hdu@mc1:~$ java -version
+hdu@mc1:~$ elasticsearch -version
+hdu@mc1:~$ kibana -version
+
+sudo su
+cd elk/ELK
+root@mc1:~/elk/ELK# cp cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/limits.conf /tmp
+root@mc1:~/elk/ELK# cp cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/sysctl.conf /tmp
+
+root@mc1:~# cp /tmp/limits.conf /etc/security/
+root@mc1:~# cp /tmp/sysctl.conf /etc/
+
+--check entries in above files
+
+hdu@mc1:~$ ls elasticsearch/config/
+elasticsearch-plugins.example.yml  jvm.options    log4j2.properties  roles.yml  users_roles
+elasticsearch.yml                  jvm.options.d  role_mapping.yml   users
+hdu@mc1:~$ ls elasticsearch/config/data
+ls: cannot access 'elasticsearch/config/data': No such file or directory
+hdu@mc1:~$ ls elasticsearch/config/logs
+ls: cannot access 'elasticsearch/config/logs': No such file or directory
+
+Now first test elasticsearch from /home/hdu/elasticsearch with default settings
+
+>elasticsearch
+--shows 
+
+ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+  HeJVXxrvg_rc=8vKapO=
+
+ℹ️  HTTP CA certificate SHA-256 fingerprint:
+  7740387fc167d4b0dd9d7ae9b4338e8ea0d2e10c433d8bc7ea4003b009270953
+
+ℹ️  Configure Kibana to use this cluster:
+• Run Kibana and click the configuration link in the terminal when Kibana starts.
+• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2N2Q0YjBkZDlkN2FlOWI0MzM4ZThlYTBkMmUxMGM0MzNkOGJjN2VhNDAwM2IwMDkyNzA5NTMiLCJrZXkiOiJPSnB0STU0QmFURHZSa2d2U2xWejo3MHZXQzViZjR0R0ZFZUpWX2JBbklRIn0=
+
+ℹ️  Configure other nodes to join this cluster:
+• On this node:
+  ⁃ Create an enrollment token with `bin/elasticsearch-create-enrollment-token -s node`.
+  ⁃ Uncomment the transport.host setting at the end of config/elasticsearch.yml.
+  ⁃ Restart Elasticsearch.
+• On other nodes:
+  ⁃ Start Elasticsearch with `bin/elasticsearch --enrollment-token <token>`, using the enrollment token that you generated.
+
+#[SECURITY SETTINGS]
+#Seurity settings that are added in elasticsearch.yml
+#---
+xpack.security.http.ssl:
+  enabled: true
+  keystore.path: certs/http.p12
+
+# Enable encryption and mutual authentication between cluster nodes
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  keystore.path: certs/transport.p12
+  truststore.path: certs/transport.p12
+# Create a new cluster with the current node only
+# Additional nodes can still join the cluster later
+cluster.initial_master_nodes: ["mc1"]
+
+# Allow HTTP API connections from anywhere
+# Connections are encrypted and require user authentication
+http.host: 0.0.0.0
+
+# Allow other nodes to join the cluster from anywhere
+# Connections are encrypted and mutually authenticated
+#transport.host: 0.0.0.0
+#------
+
+--testing:
+--here using -k to allow insecure connection i.e. without cert
+hdu@mc1:~$ curl -u elastic:HeJVXxrvg_rc=8vKapO= -XGET "https://localhost:9200/_cat/nodes?v" -k
+ip        heap.percent ram.percent cpu load_1m load_5m load_15m node.role   master name
+127.0.0.1            6          76   5    0.24    0.16     0.09 cdfhilmrstw *      mc1
+
+--with cert
+hdu@mc1:~$ curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:HeJVXxrvg_rc=8vKapO=
+ip        heap.percent ram.percent cpu load_1m load_5m load_15m node.role   master name
+127.0.0.1            6          77   1    0.02    0.09     0.08 cdfhilmrstw *      mc1
+
+--edit> hdu@mc1:~$ vi elasticsearch/config/elasticsearch.yml
+and uncomment transport.host: 0.0.0.0
+
+--start elasticsearch again
+
+--Test again
+hdu@mc1:~$ curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:HeJVXxrvg_rc=8vKapO=
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role   master name
+10.156.0.3           16          76  77    0.63    0.26     0.14 cdfhilmrstw *      mc1
+
+-----------------
+Now as per instructions
+hdu@mc1:~$ elasticsearch-create-enrollment-token -s node
+warning: ignoring JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/; using bundled JDK
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2N2Q0YjBkZDlkN2FlOWI0MzM4ZThlYTBkMmUxMGM0MzNkOGJjN2VhNDAwM2IwMDkyNzA5NTMiLCJrZXkiOiI4YUtDSTU0Qk9BeF9pUUxFd2FlYjpLZkJULXVtSWh4M0dVQ2VJNC14OFpRIn0=
+
+--stop elasticsearch [ctrl+c]
+
+--we can use this token for other nodes to join but we want to configure multiple nodes on same host using different ports
+
+So lets copy the cluster-configs in our home dirctory
+<PATH>
+E:\GitContent\ELK\ELK\Cluster_n_components_setup\ELK_Cluster_Settings\1-ES_Work\configs-SN-v9-with-security\cluster-configs\
+
+This folder contains configs for Node1, Node2 and Node3
+--Notice that these files dont have security settings enabled or present in elasticsearch.yml.
+
+Our elasticsearch.yml as shown above has security details updated and enabled.(SECURITY SETTINGS)
+root@mc1:~/elk/ELK# cp -r cluster_n_components_setup/ELK_Cluster_Settings/1-ES_Work/configs-SN-v9-with-security/cluster-configs/ /home/hdu/cluster-configs-orig-from-v9-settings
+su - hdu
+sudo chown -R hdu:hdu /home/hdu/cluster-configs-orig-from-v9-settings
+--verify configs
+cp cluster-configs-orig-from-v9-settings/Node1/elasticsearch.yml elasticsearch/config/
+
+--now add the security settings towards the end in this
+#[SECURITY SETTINGS]
+
+xpack.security.http.ssl:
+  enabled: true
+  keystore.path: certs/http.p12
+
+# Enable encryption and mutual authentication between cluster nodes
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  keystore.path: certs/transport.p12
+  truststore.path: certs/transport.p12
+# Create a new cluster with the current node only
+# Additional nodes can still join the cluster later
+cluster.initial_master_nodes: ["mc1"]
+
+# Allow HTTP API connections from anywhere
+# Connections are encrypted and require user authentication
+http.host: 0.0.0.0
+
+# Allow other nodes to join the cluster from anywhere
+# Connections are encrypted and mutually authenticated
+#transport.host: 0.0.0.0
+
+--uncomment transport.host: 0.0.0.0
+transport.host: 0.0.0.0
+
+<save>
+
+For 1st Node:
+--start elasticsearch
+hdu@mc1:~$ elasticsearch
+warning: ignoring JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/; using bundled JDK
+
+ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+  9_W6d34GiGU8gKoZfLlO
+
+ℹ️  HTTP CA certificate SHA-256 fingerprint:
+  7740387fc167d4b0dd9d7ae9b4338e8ea0d2e10c433d8bc7ea4003b009270953
+
+ℹ️  Configure Kibana to use this cluster:
+• Run Kibana and click the configuration link in the terminal when Kibana starts.
+• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2N2Q0YjBkZDlkN2FlOWI0MzM4ZThlYTBkMmUxMGM0MzNkOGJjN2VhNDAwM2IwMDkyNzA5NTMiLCJrZXkiOiJDQ0NKSTU0QktFc2F4X1FZVkQ5cTpHdWtjbVJrMk5BY2RBV3l4ZVNnMDVnIn0=
+
+ℹ️ Configure other nodes to join this cluster:
+• Copy the following enrollment token and start new Elasticsearch nodes with `bin/elasticsearch --enrollment-token <token>` (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2N2Q0YjBkZDlkN2FlOWI0MzM4ZThlYTBkMmUxMGM0MzNkOGJjN2VhNDAwM2IwMDkyNzA5NTMiLCJrZXkiOiJCaUNKSTU0QktFc2F4X1FZVkQ5bzpmQmZIelpjTlRaMEZBOXJMUWhNSnBnIn0=
+
+--check if the above were created again, if not use earlier details
+
+Test
+curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:9_W6d34GiGU8gKoZfLlO
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+10.156.0.3            5          77   6    0.16    0.19     0.13 dm        *      node1
+
+Now 2nd Node
+hdu@mc1:~$ ES_PATH_CONF=cluster-configs/Node2 elasticsearch --enrollment-token <token>
+
+--Test
+curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:9_W6d34GiGU8gKoZfLlO
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+10.156.0.3            7          97  12    1.46    0.47     0.22 dm        *      node1
+127.0.0.1            13          97  44    1.46    0.47     0.22 dm        -      node2
+
+Also check
+cat cluster-configs/Node2/elasticsearch.yml
+--this did not have security settings earlier but now does.
+
+Now 3rd Node
+ES_PATH_CONF=cluster-configs/Node3 elasticsearch --enrollment-token <token>
+
+--Test
+hdu@mc1:~$ curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:9_W6d34GiGU8gKoZfLlO
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+127.0.0.1            13          67  39    1.12    0.69     0.42 dm        -      node3
+127.0.0.1            20          67  47    1.12    0.69     0.42 dm        -      node2
+10.156.0.3           27          67  47    1.12    0.69     0.42 dm        *      node1
+
+Also check
+cat cluster-configs/Node3/elasticsearch.yml
+--this did not have security settings earlier but now does.
+
+--if we stop and start nodes
+Note** starting nodes with enrollment token needs to be done only once in beginning:
+or we get
+MSG:
+ERROR: Skipping security auto configuration because it appears that the node is not starting up for the first time. 
+The node might already be part of a cluster and this auto setup utility is designed to configure Security for new clusters only., with exit code 80
+
+Note**
+1st node started from /home/hdu/elasticsearch using > elasticsearch
+<PATHS>
+hdu@mc1:~$ ls elasticsearch/config/certs
+--initial logs
+hdu@mc1:~$ ls elasticsearch/logs
+--after editing elasticsearch.yml now our data and logs are in
+hdu@mc1:~$ ls cluster-configs/Node1/data/
+hdu@mc1:~$ ls cluster-configs/Node1/logs
+
+2nd Node started using > ES_PATH_CONF=cluster-configs/Node2 elasticsearch --enrollment-token <token>
+hdu@mc1:~$ ls cluster-configs/Node2/data/
+hdu@mc1:~$ ls cluster-configs/Node2/logs
+3nrd Node started using > ES_PATH_CONF=cluster-configs/Node3 elasticsearch --enrollment-token <token>
+hdu@mc1:~$ ls cluster-configs/Node3/data/
+hdu@mc1:~$ ls cluster-configs/Node3/logs
+
+
+========================================
+##For Kibana
+
+edit kibana/config/ibana.yml
+
+server.port: 5601
+server.host: "10.156.0.15" --or ipaddress of your machine
+server.name: "mykibana"
+elasticsearch.hosts: 
+  - http://localhost:9200
+
+--start kibana
+> kibana
+
+--use the provided the url in browser and replace the ip with external ip
+
+--now from terminal
+--generate token for kibana
+elasticsearch-create-enrollment-token -s kibana
+
+--paste this token in kibana and click on configure kibana
+--let the setup complete
+--use 
+username: elastic
+pswd: as generated above..
+
+-----------------
+
+hdu@mc1:~$ elasticsearch-create-enrollment-token -s kibana
+warning: ignoring JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/; using bundled JDK
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTAuMTU2LjAuMzo5MjAwIl0sImZnciI6Ijc3NDAzODdmYzE2N2Q0YjBkZDlkN2FlOWI0MzM4ZThlYTBkMmUxMGM0MzNkOGJjN2VhNDAwM2IwMDkyNzA5NTMiLCJrZXkiOiJvV0cxSTU0QnozODBmMUd6d0FiVjozUDd1QmNKaVcxMk5ZWjhSZVN4MGZ3In0=
+
+username: elastic
+pswd: as generated above..
+
+
+From command line:
+curl --cacert elasticsearch/config/certs/http_ca.crt https://localhost:9200/_cat/nodes?v -u elastic:9_W6d34GiGU8gKoZfLlO
+or
+hdu@mc1:~$ curl -u elastic:9_W6d34GiGU8gKoZfLlO -XGET "https://localhost:9200/_cat/nodes?v" -k
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+10.156.0.3           24          92   3    0.01    0.09     0.25 dm        -      node1
+127.0.0.1            33          92   3    0.01    0.09     0.25 dm        *      node2
+127.0.0.1            55          92   3    0.01    0.09     0.25 dm        -      node3
+hdu@mc1:~$ curl -u elastic:9_W6d34GiGU8gKoZfLlO -XGET "https://localhost:9201/_cat/nodes?v" -k
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+127.0.0.1            59          92  10    0.01    0.08     0.25 dm        -      node3
+10.156.0.3           25          92  10    0.01    0.08     0.25 dm        -      node1
+127.0.0.1            38          92  10    0.01    0.08     0.25 dm        *      node2
+hdu@mc1:~$ curl -u elastic:9_W6d34GiGU8gKoZfLlO -XGET "https://localhost:9202/_cat/nodes?v" -k
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+127.0.0.1            62          92   6    0.01    0.08     0.25 dm        -      node3
+127.0.0.1            41          92   5    0.01    0.08     0.25 dm        *      node2
+10.156.0.3           26          92   5    0.01    0.08     0.25 dm        -      node1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

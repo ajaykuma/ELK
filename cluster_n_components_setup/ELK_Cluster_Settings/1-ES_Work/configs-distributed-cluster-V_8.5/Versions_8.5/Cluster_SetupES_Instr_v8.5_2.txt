@@ -6,8 +6,8 @@ or edit properties to set security disabled
 -------------------
 On Node1:
 > elasticsearch
-✅ Elasticsearch security features have been automatically configured!
-✅ Authentication is enabled and cluster connections are encrypted.
+Elasticsearch security features have been automatically configured!
+Authentication is enabled and cluster connections are encrypted.
 
 ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
   peRqb9fiE24NZbe*dIRJ
