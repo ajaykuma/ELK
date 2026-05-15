@@ -363,3 +363,75 @@ output {
   }
 
 }
+
+---------------
+current Logstash pipeline is doing this:
+
+Finds PDFs
+Reads entire PDF binary into memory
+Base64 encodes it
+Sends entire encoded blob into Elasticsearch ingest pipeline (attachment processor most likely)
+
+This will eventually hit architectural limits for large PDFs, especially near or above the Lucene document size limit.
+
+Note**
+Lucene has a hard document size limit of roughly 2GB.
+Elasticsearch stores each indexed document as a Lucene document internally.
+{
+  "data": "<base64-encoded huge pdf>"
+}
+
+because:
+
+Base64 increases size by ~33%
+2GB PDF becomes ~2.66GB encoded
+ingest attachment extraction expands memory even more
+Apache Tika extracts text into massive strings
+
+Result:
+
+indexing failure
+OOM errors
+ingest node crashes
+circuit breaker exceptions
+huge GC pauses
+
+##Text Extraction Explosion
+The actual issue is usually not the binary size.
+It's the extracted text.
+sample PDF is tiny (~14 pages), but if:
+
+scanned books
+legal archives
+medical records
+OCR PDFs
+engineering manuals
+
+A 2GB PDF can easily extract into:
+
+tens of millions of characters
+gigantic _source
+unusable search latency
+
+Approach: To use:Chunking
+No Lucene limit issue
+Each chunk is tiny.
+Example: 2KB–20KB per chunk
+instead of: multi-GB documents
+
+Better Search
+
+Instead of retrieving whole PDF:
+
+You retrieve:
+relevant pages
+relevant paragraphs
+semantic chunks
+
+This is how it happens in:
+RAG systems
+ChatGPT retrieval
+enterprise search
+vector DBs
+-----------------
+Refer: SetupLS9-bidata.txt

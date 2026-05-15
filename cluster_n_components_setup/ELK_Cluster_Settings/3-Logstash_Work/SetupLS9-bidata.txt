@@ -1,0 +1,219 @@
+#Using Python extractor > text chunking > embeddings (optiional) > ES Buld indexing
+-----------------------------------------
+Advantages:
+
+handles huge PDFs
+avoids Lucene 2GB limit
+ideal for RAG
+semantic search ready
+scalable
+chunk-level retrieval
+supports OCR later
+cheaper queries
+faster indexing
+
+Create Elasticsearch Index:
+Using Curl:
+curl -k -u elastic:password -X PUT "https://localhost:9200/pdf_chunks" \
+-H "Content-Type: application/json" \
+-d '
+{
+  "mappings": {
+    "properties": {
+      "document_id": { "type": "keyword" },
+      "file_name": { "type": "keyword" },
+      "page": { "type": "integer" },
+      "chunk_id": { "type": "keyword" },
+      "text": { "type": "text" },
+      "embedding": {
+        "type": "dense_vector",
+        "dims": 384,
+        "index": true,
+        "similarity": "cosine"
+      }
+    }
+  }
+}'
+
+or using dev tools
+PUT /pdf_chunks
+{
+  "mappings": {
+    "properties": {
+      "document_id": { "type": "keyword" },
+      "file_name": { "type": "keyword" },
+      "page": { "type": "integer" },
+      "chunk_id": { "type": "keyword" },
+      "text": { "type": "text" },
+      "embedding": {
+        "type": "dense_vector",
+        "dims": 384,
+        "index": true,
+        "similarity": "cosine"
+      }
+    }
+  }
+}
+
+GET pdf_chunks/_mapping
+
+#Install python
+pip install pymupdf sentence-transformers elasticsearch==8.19.0
+
+create py-extract.py
+
+import fitz
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
+from sentence_transformers import SentenceTransformer
+import uuid
+
+# Elasticsearch connection
+es = Elasticsearch(
+    ["https://localhost:9200"],
+    basic_auth=("elastic", "9_W6d34GiGU8gKoZfLlO"),
+    ca_certs="/home/hdu/elasticsearch/config/certs/http_ca.crt"
+)
+
+print("Connected:", es.ping())
+
+# Embedding model
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+PDF_PATH = "/home/hdu/datasets/pdfs/BI_approaches.pdf"
+
+doc = fitz.open(PDF_PATH)
+
+bulk_docs = []
+
+CHUNK_SIZE = 1000
+
+for page_num in range(len(doc)):
+
+    print(f"Processing page {page_num+1}")
+
+    page = doc[page_num]
+
+    text = page.get_text()
+
+    print("Text length:", len(text))
+
+    chunks = [
+        text[i:i+CHUNK_SIZE]
+        for i in range(0, len(text), CHUNK_SIZE)
+    ]
+
+    for idx, chunk in enumerate(chunks):
+
+        embedding = model.encode(chunk).tolist()
+
+        bulk_docs.append({
+            "_index": "pdf_chunks",
+            "_id": str(uuid.uuid4()),
+            "_source": {
+                "document_id": PDF_PATH,
+                "file_name": PDF_PATH,
+                "page": page_num + 1,
+                "chunk_id": f"{page_num+1}_{idx}",
+                "text": chunk,
+                "embedding": embedding
+            }
+        })
+
+print(f"Prepared {len(bulk_docs)} chunks")
+
+success, failed = bulk(
+    es,
+    bulk_docs,
+    stats_only=True,
+    raise_on_error=False
+)
+
+print("Indexed:", success)
+print("Failed:", failed)
+
+---------------
+Once data indexed
+
+try kinds of querying:
+
+keyword search
+semantic/vector search
+hybrid search (best approach)
+
+GET pdf_chunks/_search
+{
+    "explain": true, 
+    "query": {
+        "match_all": {}
+    }
+}
+
+
+GET pdf_chunks/_search
+{
+  "query": {
+    "match": {
+      "text": "business intelligence"
+    }
+  }
+}
+
+#Phrase search
+GET pdf_chunks/_search
+{
+  "query": {
+    "match_phrase": {
+      "text": "competitive intelligence"
+    }
+  }
+}
+
+#Multi-word relevance
+GET pdf_chunks/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "decision support systems",
+      "fields": ["text"]
+    }
+  }
+}
+
+--semantic_search.py
+from elasticsearch import Elasticsearch
+from sentence_transformers import SentenceTransformer
+
+# Elasticsearch connection
+es = Elasticsearch(
+    ["https://localhost:9200"],
+    basic_auth=("elastic", "9_W6d34GiGU8gKoZfLlO"),
+    ca_certs="/home/hdu/elasticsearch/config/certs/http_ca.crt"
+)
+
+# Same embedding model used during indexing
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+query = "technical approaches in business intelligence"
+
+# Convert query to embedding
+query_embedding = model.encode(query).tolist()
+
+response = es.search(
+    index="pdf_chunks",
+    knn={
+        "field": "embedding",
+        "query_vector": query_embedding,
+        "k": 5,
+        "num_candidates": 20
+    }
+)
+
+for hit in response["hits"]["hits"]:
+
+    print("\nSCORE:", hit["_score"])
+
+    print("PAGE:", hit["_source"]["page"])
+
+    print(hit["_source"]["text"][:500])
+
