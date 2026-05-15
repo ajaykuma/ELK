@@ -12,6 +12,58 @@ GET _nodes?filter_path=**.mlockall
 
 GET _nodes/stats/process?filter_path=**.max_file_descriptors
 
+#Cache Monitoring
+Query cache
+GET /_nodes/stats/indices/query_cache?pretty
+
+#Request cache
+GET /_nodes/stats/indices/request_cache?pretty
+
+#Fielddata breaker risk
+--Very important to detect:
+aggregation memory explosions
+circuit breaker trips
+GET /_nodes/stats/breaker?pretty
+
+#Thread Pools & Backpressure
+GET /_nodes/stats/indexing_pressure?pretty
+
+#Bulk thread pool saturation
+GET /_cat/thread_pool/write?v&h=node_name,name,active,rejected,completed
+--Watch for:
+rejected writes
+queue buildup
+
+
+
+#Node JVM / heap pressure
+GET /_nodes/stats/jvm?pretty
+#Watch:
+heap_used_percent
+gc collectors
+old GC frequency
+memory pressure
+
+Very important for detecting:
+oversized aggregations
+memory leaks
+bad mappings
+
+#OS+cpu+load
+GET /_nodes/stats/os?pretty
+--Check:
+CPU usage
+load averages
+cgroup limits (containers/K8s)
+
+#fs usage
+GET /_nodes/stats/fs?pretty
+
+Useful for:
+disk watermarks
+shard allocation failures
+SSD saturation
+
 GET /_cat/thread_pool/search?v&h=node_name,name,active,rejected,completed
 
 GET /_cat/allocation?v
@@ -26,31 +78,28 @@ GET /_cat/health?v
 
 GET /_cat/nodes?v
 
+GET /_cat/recovery?v
+GET /bankdata/_recovery?pretty
+--Shows:
+
+shard recovery speed
+source/target nodes
+bytes recovered
+translog replay
+
+
 GET /_cat/indices?help
 
 GET /_cat/indices?bytes=b&s=store.size:desc&v
 
 GET /_cat/indices?s=store.size:desc&format=json&v
 
-GET /_cat/indices/bankdata?s=store.size:desc&v
-
 #using sort(s=column:desc)
 GET /_cat/indices?bytes=b&s=store.size:desc&v
-health status index                uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-green  open   population           qdtpBy_uQTiPXdqV3gtlfw   5   1        466            0    1921130         960574
-green  open   ecommerce            ppC9jAzRQoOG7dOHu5-7aw   1   2         31            0     140282          46761
-green  open   .kibana_1            D03f4JRaRKe5yiCFxqMJsA   1   2          5            1      61156          20391
-green  open   .kibana_task_manager zybvkvCWQM2WPNorQXHqXw   1   2          2            0      21019           7007
-green  open   ecommerce100         S1piCZD4TMysvUpi7CbYxw   1   1          0            0        522
 
 or
 GET /_cat/indices?s=store.size:desc&v
-health status index                uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-green  open   population           qdtpBy_uQTiPXdqV3gtlfw   5   1        466            0      1.8mb          938kb
-green  open   ecommerce            ppC9jAzRQoOG7dOHu5-7aw   1   2         31            0    136.9kb         45.6kb
-green  open   .kibana_1            D03f4JRaRKe5yiCFxqMJsA   1   2          5            1     59.7kb         19.9kb
-green  open   .kibana_task_manager zybvkvCWQM2WPNorQXHqXw   1   2          2            0     20.5kb          6.8kb
-green  open   ecommerce100         S1piCZD4TMysvUpi7CbYxw   1   1          0            0       522b           261b
+
 
 GET /_cat/indices/bankdata?s=store.size:desc&v
 health status index    uuid                   pri rep docs.count docs.deleted store.size pri.store.size
@@ -91,11 +140,46 @@ type
     (Optional, string) The type to sample. Available options are block, cpu, and wait. Defaults to cpu. 
 
 
+#Index Health & Efficiency
+GET /bankdata/_stats?pretty
+--Shows:
+
+indexing rate
+search rate
+merges
+refreshes
+flushes
+translog
+cache
+
+#Store stats
+GET /bankdata/_stats/store?pretty
+
+#Translog stats
+GET /bankdata/_stats/translog?pretty
+--Useful for:
+
+recovery analysis
+indexing durability tuning
+
+#Refresh / flush / merge stats
+GET /bankdata/_stats/refresh,flush,merge?pretty
+
 GET _nodes/hot_threads
 
 GET /_cat/fielddata?v
 
 GET /_cat/fielddata?help
+
+GET /_cat/segments?v
+--Very useful for:
+
+merge analysis
+shard bloat
+too many segments
+
+Too many small segments = inefficient searches.
+
 
 #changing settings for default index
 PUT /.kibana_task_manager/_settings
@@ -104,6 +188,65 @@ PUT /.kibana_task_manager/_settings
   "number_of_replicas":3,
   "auto_expand_replicas": false
 }
+}
+
+#Search & Query Performance
+Search slow logs
+
+Enable per-index:
+PUT /bankdata/_settings
+{
+  "index.search.slowlog.threshold.query.warn": "2s",
+  "index.search.slowlog.threshold.fetch.warn": "1s"
+}
+
+#Indexing slow logs
+--Great for ingestion bottlenecks.
+PUT /bankdata/_settings
+{
+  "index.indexing.slowlog.threshold.index.warn": "1s"
+}
+
+#Search profiling
+Deep query execution analysis.
+GET /bankdata/_search
+{
+  "profile": true,
+  "query": {
+    "match": {
+      "firstname": "john"
+    }
+  }
+}
+
+--Shows:
+scorer timings
+collector timings
+expensive clauses
+cache usage
+
+#Explain score calculation
+GET /bankdata/_explain/1
+{
+  "query": {
+    "match": {
+      "firstname": "john"
+    }
+  }
+}
+
+#Mapping explosion detection
+GET /bankdata/_mapping
+
+Watch for:
+too many dynamic fields
+keyword/text duplication
+deeply nested objects
+
+#ESQL (newer versions)
+POST /_query
+{
+  "query": "FROM bankdata | LIMIT 5"
 }
 
 #looking at allocation/shard level information
@@ -116,20 +259,19 @@ GET /_cluster/health
 
 GET /_cluster/allocation/explain
 
+GET /_cluster/stats?pretty
+--Gives:
+
+node counts
+shard counts
+index totals
+JVM stats
+filesystem usage
+plugins
+versions
+
 GET /_cat/shards?help
-index                        | i,idx                          | index name                                                                              
-shard                        | s,sh                           | shard name                                                                                                       
-prirep                       | p,pr,primaryOrReplica          | primary or replica                                                                                               
-state                        | st                             | shard state                                                                                                      
-docs                         | d,dc                           | number of docs in shard                                                                                          
-store                        | sto                            | store size of shard (how much disk it uses)                                                                      
-ip                           |                                | ip of node where it lives                                                                                        
-id                           |                                | unique id of node where it lives                                                                                 
-node                         | n                              | name of node where it lives                                                                                      
-sync_id                      | sync_id                        | sync id                                                                                                          
-unassigned.reason            | ur                             | reason shard is unassigned                                                                                       
-unassigned.at                | ua                             | time shard became unassigned (UTC)                                                                               
-unassigned.for               | uf                             | time has been unassigned                                                                                         
+                                                                            
 ....and so on
 
 GET /_cat/shards/ecommerce?pretty=true
@@ -199,65 +341,8 @@ cluster   status node.total node.data shards pri relo init unassign pending_task
 mycluster green           4         4     21   9    0    0        0             0                  -                100.0%
 
 GET /_cluster/health
-{
-  "cluster_name" : "mycluster",
-  "status" : "green",
-  "timed_out" : false,
-  "number_of_nodes" : 4,
-  "number_of_data_nodes" : 4,
-  "active_primary_shards" : 9,
-  "active_shards" : 21,
-  "relocating_shards" : 0,
-  "initializing_shards" : 0,
-  "unassigned_shards" : 0,
-  "delayed_unassigned_shards" : 0,
-  "number_of_pending_tasks" : 0,
-  "number_of_in_flight_fetch" : 0,
-  "task_max_waiting_in_queue_millis" : 0,
-  "active_shards_percent_as_number" : 100.0
-}
 
 GET /_cluster/health/ecommerce?level=shards
-{
-  "cluster_name" : "mycluster",
-  "status" : "green",
-  "timed_out" : false,
-  "number_of_nodes" : 4,
-  "number_of_data_nodes" : 4,
-  "active_primary_shards" : 1,
-  "active_shards" : 3,
-  "relocating_shards" : 0,
-  "initializing_shards" : 0,
-  "unassigned_shards" : 0,
-  "delayed_unassigned_shards" : 0,
-  "number_of_pending_tasks" : 0,
-  "number_of_in_flight_fetch" : 0,
-  "task_max_waiting_in_queue_millis" : 0,
-  "active_shards_percent_as_number" : 100.0,
-  "indices" : {
-    "ecommerce" : {
-      "status" : "green",
-      "number_of_shards" : 1,
-      "number_of_replicas" : 2,
-      "active_primary_shards" : 1,
-      "active_shards" : 3,
-      "relocating_shards" : 0,
-      "initializing_shards" : 0,
-      "unassigned_shards" : 0,
-      "shards" : {
-        "0" : {
-          "status" : "green",
-          "primary_active" : true,
-          "active_shards" : 3,
-          "relocating_shards" : 0,
-          "initializing_shards" : 0,
-          "unassigned_shards" : 0
-        }
-      }
-    }
-  }
-}
-
 #similarly
 GET /_cluster/health/bankdata?level=shards
 
@@ -273,4 +358,74 @@ GET /_cat/indices/popu*?v&s=index
 health status index      uuid                   pri rep docs.count docs.deleted store.size pri.store.size
 green  open   population qdtpBy_uQTiPXdqV3gtlfw   5   1        466            0      1.8mb          938kb
 
-#Use newer features/apis when with v9
+#Shows stuck cluster state updates, shard reroutes, mapping updates, etc.
+GET /_cluster/pending_tasks
+--Useful when:
+
+cluster feels slow
+shard allocation hangs
+mappings are updating continuously
+
+#ILM / Data Lifecycle
+GET /_ilm/policy
+
+#Explain lifecycle state
+GET /bankdata/_ilm/explain
+
+#Snapshot and backup
+--Snapshot repositories
+GET /_snapshot
+
+#Snapshot status
+GET /_snapshot/myrepo/_all
+
+#Running snapshots
+GET /_snapshot/_status
+
+#Security & Users
+Current authenticated user
+GET /_security/_authenticate
+
+--roles
+GET /_security/role
+
+--users
+GET /_security/user
+
+#Tasks & Long Running Operations
+Running tasks
+GET /_tasks?pretty
+
+detailed tasks
+GET /_tasks?detailed=true&actions=*search
+
+Cancel runaway query
+--Very useful for:
+
+expensive aggregations
+accidental wildcard searches
+
+POST /_tasks/<task_id>/_cancel
+
+#Disk Watermark & Allocation Settings
+Check current allocation settings
+
+GET /_cluster/settings?include_defaults=true
+
+#Lucene segment memory
+GET /_nodes/stats/indices/segments?pretty
+
+#Indexing pressure
+GET /_nodes/stats/indexing_pressure
+
+#Ingest pipeline stats
+GET /_nodes/stats/ingest?pretty
+
+
+
+
+
+
+
+
+

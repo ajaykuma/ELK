@@ -180,6 +180,12 @@ GET pdf_chunks/_search
   }
 }
 
+#Semantic search
+earches by meaning instead of keywords, 
+for example: "How do organizations use analytics for decisions?"
+can retrieve chunks: "data-driven decision making"
+
+
 --semantic_search.py
 from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
