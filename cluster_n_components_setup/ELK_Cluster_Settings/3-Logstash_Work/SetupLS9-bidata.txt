@@ -181,7 +181,7 @@ GET pdf_chunks/_search
 }
 
 #Semantic search
-earches by meaning instead of keywords, 
+searches by meaning instead of keywords, 
 for example: "How do organizations use analytics for decisions?"
 can retrieve chunks: "data-driven decision making"
 

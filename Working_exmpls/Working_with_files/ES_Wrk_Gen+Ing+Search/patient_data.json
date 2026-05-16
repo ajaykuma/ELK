@@ -1,0 +1,852 @@
+[
+  {
+    "patient_id": "P001",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Type 2 Diabetes follow-up.",
+    "abnormal_tests": [
+      "Microalbumin/Creatinine",
+      "Insulin",
+      "Glucose (Fasting)",
+      "Cholesterol"
+    ],
+    "abnormal_count": 4
+  },
+  {
+    "patient_id": "P002",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Hypothyroidism follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "Cholesterol",
+      "TSH",
+      "Anti-TPO",
+      "LDL"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P003",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Hematologist",
+    "diagnosis": "Iron-Deficiency Anaemia follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "MCH",
+      "Ferritin",
+      "TIBC",
+      "Platelets",
+      "Serum Iron",
+      "Transferrin Saturation"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P004",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Nephrologist",
+    "diagnosis": "Chronic Kidney Disease (Stage 3) follow-up.",
+    "abnormal_tests": [
+      "BUN",
+      "Hemoglobin",
+      "Glucose (Fasting)",
+      "Creatinine",
+      "eGFR",
+      "Potassium",
+      "Phosphorus"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P005",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Gastroenterologist",
+    "diagnosis": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "ALT",
+      "INR",
+      "WBC Count",
+      "Bilirubin (Total)",
+      "Albumin",
+      "Platelets",
+      "AST"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P006",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Cardiologist",
+    "diagnosis": "Hypertensive Heart Disease follow-up.",
+    "abnormal_tests": [
+      "Glucose (Fasting)",
+      "HDL",
+      "BNP",
+      "Cholesterol",
+      "hsCRP",
+      "LDL",
+      "Troponin I"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P007",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Pulmonologist",
+    "diagnosis": "Allergic Asthma follow-up.",
+    "abnormal_tests": [
+      "Eosinophils",
+      "Total IgE",
+      "CRP",
+      "Peak Expiratory Flow",
+      "Specific IgE (Dust mites)"
+    ],
+    "abnormal_count": 5
+  },
+  {
+    "patient_id": "P008",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "General Physician",
+    "diagnosis": "Bacterial Sepsis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Bands",
+      "ALT",
+      "Glucose (Fasting)",
+      "INR",
+      "WBC Count",
+      "CRP",
+      "Creatinine",
+      "Platelets",
+      "Procalcitonin",
+      "Neutrophils",
+      "Lactate"
+    ],
+    "abnormal_count": 12
+  },
+  {
+    "patient_id": "P009",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+    "abnormal_tests": [
+      "AMH",
+      "Insulin (Fasting)",
+      "Glucose (Fasting)",
+      "Free Testosterone",
+      "HOMA-IR",
+      "LH",
+      "Cholesterol"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P010",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "General Physician",
+    "diagnosis": "Rheumatoid Arthritis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Rheumatoid Factor",
+      "CRP",
+      "Platelets",
+      "Anti-CCP",
+      "ESR"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P011",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Type 2 Diabetes follow-up.",
+    "abnormal_tests": [
+      "Microalbumin/Creatinine",
+      "Insulin",
+      "Glucose (Fasting)",
+      "Cholesterol"
+    ],
+    "abnormal_count": 4
+  },
+  {
+    "patient_id": "P012",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Hypothyroidism follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "Cholesterol",
+      "TSH",
+      "Anti-TPO",
+      "LDL"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P013",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Hematologist",
+    "diagnosis": "Iron-Deficiency Anaemia follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "MCH",
+      "Ferritin",
+      "TIBC",
+      "Platelets",
+      "Serum Iron",
+      "Transferrin Saturation"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P014",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Nephrologist",
+    "diagnosis": "Chronic Kidney Disease (Stage 3) follow-up.",
+    "abnormal_tests": [
+      "BUN",
+      "Hemoglobin",
+      "Glucose (Fasting)",
+      "Creatinine",
+      "eGFR",
+      "Potassium",
+      "Phosphorus"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P015",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Gastroenterologist",
+    "diagnosis": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "ALT",
+      "INR",
+      "WBC Count",
+      "Bilirubin (Total)",
+      "Albumin",
+      "Platelets",
+      "AST"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P016",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Cardiologist",
+    "diagnosis": "Hypertensive Heart Disease follow-up.",
+    "abnormal_tests": [
+      "Glucose (Fasting)",
+      "HDL",
+      "BNP",
+      "Cholesterol",
+      "hsCRP",
+      "LDL",
+      "Troponin I"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P017",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Pulmonologist",
+    "diagnosis": "Allergic Asthma follow-up.",
+    "abnormal_tests": [
+      "Eosinophils",
+      "Total IgE",
+      "CRP",
+      "Peak Expiratory Flow",
+      "Specific IgE (Dust mites)"
+    ],
+    "abnormal_count": 5
+  },
+  {
+    "patient_id": "P018",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "General Physician",
+    "diagnosis": "Bacterial Sepsis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Bands",
+      "ALT",
+      "Glucose (Fasting)",
+      "INR",
+      "WBC Count",
+      "CRP",
+      "Creatinine",
+      "Platelets",
+      "Procalcitonin",
+      "Neutrophils",
+      "Lactate"
+    ],
+    "abnormal_count": 12
+  },
+  {
+    "patient_id": "P019",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+    "abnormal_tests": [
+      "AMH",
+      "Insulin (Fasting)",
+      "Glucose (Fasting)",
+      "Free Testosterone",
+      "HOMA-IR",
+      "LH",
+      "Cholesterol"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P020",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "General Physician",
+    "diagnosis": "Rheumatoid Arthritis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Rheumatoid Factor",
+      "CRP",
+      "Platelets",
+      "Anti-CCP",
+      "ESR"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P021",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Type 2 Diabetes follow-up.",
+    "abnormal_tests": [
+      "Microalbumin/Creatinine",
+      "Insulin",
+      "Glucose (Fasting)",
+      "Cholesterol"
+    ],
+    "abnormal_count": 4
+  },
+  {
+    "patient_id": "P022",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Hypothyroidism follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "Cholesterol",
+      "TSH",
+      "Anti-TPO",
+      "LDL"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P023",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Hematologist",
+    "diagnosis": "Iron-Deficiency Anaemia follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "MCH",
+      "Ferritin",
+      "TIBC",
+      "Platelets",
+      "Serum Iron",
+      "Transferrin Saturation"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P024",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Nephrologist",
+    "diagnosis": "Chronic Kidney Disease (Stage 3) follow-up.",
+    "abnormal_tests": [
+      "BUN",
+      "Hemoglobin",
+      "Glucose (Fasting)",
+      "Creatinine",
+      "eGFR",
+      "Potassium",
+      "Phosphorus"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P025",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Gastroenterologist",
+    "diagnosis": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "ALT",
+      "INR",
+      "WBC Count",
+      "Bilirubin (Total)",
+      "Albumin",
+      "Platelets",
+      "AST"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P026",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Cardiologist",
+    "diagnosis": "Hypertensive Heart Disease follow-up.",
+    "abnormal_tests": [
+      "Glucose (Fasting)",
+      "HDL",
+      "BNP",
+      "Cholesterol",
+      "hsCRP",
+      "LDL",
+      "Troponin I"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P027",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Pulmonologist",
+    "diagnosis": "Allergic Asthma follow-up.",
+    "abnormal_tests": [
+      "Eosinophils",
+      "Total IgE",
+      "CRP",
+      "Peak Expiratory Flow",
+      "Specific IgE (Dust mites)"
+    ],
+    "abnormal_count": 5
+  },
+  {
+    "patient_id": "P028",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "General Physician",
+    "diagnosis": "Bacterial Sepsis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Bands",
+      "ALT",
+      "Glucose (Fasting)",
+      "INR",
+      "WBC Count",
+      "CRP",
+      "Creatinine",
+      "Platelets",
+      "Procalcitonin",
+      "Neutrophils",
+      "Lactate"
+    ],
+    "abnormal_count": 12
+  },
+  {
+    "patient_id": "P029",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+    "abnormal_tests": [
+      "AMH",
+      "Insulin (Fasting)",
+      "Glucose (Fasting)",
+      "Free Testosterone",
+      "HOMA-IR",
+      "LH",
+      "Cholesterol"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P030",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "General Physician",
+    "diagnosis": "Rheumatoid Arthritis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Rheumatoid Factor",
+      "CRP",
+      "Platelets",
+      "Anti-CCP",
+      "ESR"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P031",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Type 2 Diabetes follow-up.",
+    "abnormal_tests": [
+      "Microalbumin/Creatinine",
+      "Insulin",
+      "Glucose (Fasting)",
+      "Cholesterol"
+    ],
+    "abnormal_count": 4
+  },
+  {
+    "patient_id": "P032",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Hypothyroidism follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "Cholesterol",
+      "TSH",
+      "Anti-TPO",
+      "LDL"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P033",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Hematologist",
+    "diagnosis": "Iron-Deficiency Anaemia follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "MCH",
+      "Ferritin",
+      "TIBC",
+      "Platelets",
+      "Serum Iron",
+      "Transferrin Saturation"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P034",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Nephrologist",
+    "diagnosis": "Chronic Kidney Disease (Stage 3) follow-up.",
+    "abnormal_tests": [
+      "BUN",
+      "Hemoglobin",
+      "Glucose (Fasting)",
+      "Creatinine",
+      "eGFR",
+      "Potassium",
+      "Phosphorus"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P035",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Gastroenterologist",
+    "diagnosis": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "ALT",
+      "INR",
+      "WBC Count",
+      "Bilirubin (Total)",
+      "Albumin",
+      "Platelets",
+      "AST"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P036",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Cardiologist",
+    "diagnosis": "Hypertensive Heart Disease follow-up.",
+    "abnormal_tests": [
+      "Glucose (Fasting)",
+      "HDL",
+      "BNP",
+      "Cholesterol",
+      "hsCRP",
+      "LDL",
+      "Troponin I"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P037",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Pulmonologist",
+    "diagnosis": "Allergic Asthma follow-up.",
+    "abnormal_tests": [
+      "Eosinophils",
+      "Total IgE",
+      "CRP",
+      "Peak Expiratory Flow",
+      "Specific IgE (Dust mites)"
+    ],
+    "abnormal_count": 5
+  },
+  {
+    "patient_id": "P038",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "General Physician",
+    "diagnosis": "Bacterial Sepsis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Bands",
+      "ALT",
+      "Glucose (Fasting)",
+      "INR",
+      "WBC Count",
+      "CRP",
+      "Creatinine",
+      "Platelets",
+      "Procalcitonin",
+      "Neutrophils",
+      "Lactate"
+    ],
+    "abnormal_count": 12
+  },
+  {
+    "patient_id": "P039",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+    "abnormal_tests": [
+      "AMH",
+      "Insulin (Fasting)",
+      "Glucose (Fasting)",
+      "Free Testosterone",
+      "HOMA-IR",
+      "LH",
+      "Cholesterol"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P040",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "General Physician",
+    "diagnosis": "Rheumatoid Arthritis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Rheumatoid Factor",
+      "CRP",
+      "Platelets",
+      "Anti-CCP",
+      "ESR"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P041",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Type 2 Diabetes follow-up.",
+    "abnormal_tests": [
+      "Microalbumin/Creatinine",
+      "Insulin",
+      "Glucose (Fasting)",
+      "Cholesterol"
+    ],
+    "abnormal_count": 4
+  },
+  {
+    "patient_id": "P042",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Hypothyroidism follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "Cholesterol",
+      "TSH",
+      "Anti-TPO",
+      "LDL"
+    ],
+    "abnormal_count": 6
+  },
+  {
+    "patient_id": "P043",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Hematologist",
+    "diagnosis": "Iron-Deficiency Anaemia follow-up.",
+    "abnormal_tests": [
+      "MCV",
+      "Hemoglobin",
+      "MCH",
+      "Ferritin",
+      "TIBC",
+      "Platelets",
+      "Serum Iron",
+      "Transferrin Saturation"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P044",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Nephrologist",
+    "diagnosis": "Chronic Kidney Disease (Stage 3) follow-up.",
+    "abnormal_tests": [
+      "BUN",
+      "Hemoglobin",
+      "Glucose (Fasting)",
+      "Creatinine",
+      "eGFR",
+      "Potassium",
+      "Phosphorus"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P045",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Gastroenterologist",
+    "diagnosis": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "ALT",
+      "INR",
+      "WBC Count",
+      "Bilirubin (Total)",
+      "Albumin",
+      "Platelets",
+      "AST"
+    ],
+    "abnormal_count": 8
+  },
+  {
+    "patient_id": "P046",
+    "patient_name": "",
+    "gender": "Male",
+    "specialty": "Cardiologist",
+    "diagnosis": "Hypertensive Heart Disease follow-up.",
+    "abnormal_tests": [
+      "Glucose (Fasting)",
+      "HDL",
+      "BNP",
+      "Cholesterol",
+      "hsCRP",
+      "LDL",
+      "Troponin I"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P047",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Pulmonologist",
+    "diagnosis": "Allergic Asthma follow-up.",
+    "abnormal_tests": [
+      "Eosinophils",
+      "Total IgE",
+      "CRP",
+      "Peak Expiratory Flow",
+      "Specific IgE (Dust mites)"
+    ],
+    "abnormal_count": 5
+  },
+  {
+    "patient_id": "P048",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "General Physician",
+    "diagnosis": "Bacterial Sepsis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Bands",
+      "ALT",
+      "Glucose (Fasting)",
+      "INR",
+      "WBC Count",
+      "CRP",
+      "Creatinine",
+      "Platelets",
+      "Procalcitonin",
+      "Neutrophils",
+      "Lactate"
+    ],
+    "abnormal_count": 12
+  },
+  {
+    "patient_id": "P049",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "Endocrinologist",
+    "diagnosis": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+    "abnormal_tests": [
+      "AMH",
+      "Insulin (Fasting)",
+      "Glucose (Fasting)",
+      "Free Testosterone",
+      "HOMA-IR",
+      "LH",
+      "Cholesterol"
+    ],
+    "abnormal_count": 7
+  },
+  {
+    "patient_id": "P050",
+    "patient_name": "",
+    "gender": "Female",
+    "specialty": "General Physician",
+    "diagnosis": "Rheumatoid Arthritis follow-up.",
+    "abnormal_tests": [
+      "Hemoglobin",
+      "Rheumatoid Factor",
+      "CRP",
+      "Platelets",
+      "Anti-CCP",
+      "ESR"
+    ],
+    "abnormal_count": 6
+  }
+]

@@ -1,0 +1,892 @@
+generate_reports.py — Generates data
+10 distinct ailment profiles (Diabetes, Hypothyroidism, Iron-Deficiency Anaemia, CKD Stage 3, Liver Cirrhosis, 
+Hypertensive Heart Disease, Allergic Asthma, Bacterial Sepsis, PCOS, Rheumatoid Arthritis), each with realistic abnormal lab values. 
+
+It cycles through all 10 across 50 patients and applies small random jitter to each numeric value so the reports aren't identical twins.
+Each PDF is chunked by section (CBC, Thyroid, Metabolic, etc.), so a search for "elevated TSH" hits the Thyroid 
+chunk rather than an entire document. Abnormal tests are extracted and stored as a keyword array — perfect for 
+Elasticsearch term aggregations and bucket analytics.
+
+Use the generated Lab reports from : E:\lab_reports
+
+##Testing
+PS D:\Microsoft VS Code> & C:\Users\Ajay\AppData\Local\Programs\Python\Python310\python.exe e:/es_ingest.py
+
+Lab Report ES toolkit
+
+options:
+  -h, --help       show this help message and exit
+  --ingest         Parse PDFs and ingest into ES
+  --search SEARCH  Full-text search query
+  --stats          Print aggregation stats
+
+# See all indices
+curl "http://localhost:9200/_cat/indices?v"
+
+--if exists
+curl -X DELETE "http://localhost:9200/lab_reports"
+
+--or just cleanup data
+curl -X POST "http://localhost:9200/lab_reports/_delete_by_query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": {"match_all": {}}}'
+
+# Check index exists and doc count
+curl "http://localhost:9200/lab_reports/_count"
+
+##Indexing
+PS D:\Microsoft VS Code> & C:\Users\Ajay\AppData\Local\Programs\Python\Python310\python.exe e:/es_ingest.py --ingest
+
+---sample output---
+Deleted existing index 'lab_reports'
+Created index 'lab_reports'
+  Parsed P001_Aarav_Ferreira_lab_report.pdf  → 6 chunks
+  Parsed P002_Bhavna_Russo_lab_report.pdf  → 5 chunks
+  Parsed P003_Carlos_Das_lab_report.pdf  → 6 chunks
+  Parsed P004_Diana_Nguyen_lab_report.pdf  → 5 chunks
+  Parsed P005_Ethan_Johansson_lab_report.pdf  → 5 chunks
+  Parsed P006_Fatima_Chen_lab_report.pdf  → 6 chunks
+  Parsed P007_George_Nguyen_lab_report.pdf  → 6 chunks
+  Parsed P008_Hina_Hassan_lab_report.pdf  → 6 chunks
+  Parsed P009_Ivan_Singh_lab_report.pdf  → 6 chunks
+  Parsed P010_Jasmine_Kowalski_lab_report.pdf  → 6 chunks
+  Parsed P011_Kevin_Andersen_lab_report.pdf  → 6 chunks
+  Parsed P012_Lena_Smith_lab_report.pdf  → 5 chunks
+  Parsed P013_Marco_Das_lab_report.pdf  → 6 chunks
+  Parsed P014_Nadia_Brown_lab_report.pdf  → 5 chunks
+  Parsed P015_Omar_Smith_lab_report.pdf  → 5 chunks
+  Parsed P016_Priya_Patel_lab_report.pdf  → 6 chunks
+  Parsed P017_Quinn_Patel_lab_report.pdf  → 6 chunks
+  Parsed P018_Ravi_Williams_lab_report.pdf  → 6 chunks
+  Parsed P019_Sara_Garcia_lab_report.pdf  → 6 chunks
+  Parsed P020_Tariq_Liu_lab_report.pdf  → 6 chunks
+  Parsed P021_Uma_Müller_lab_report.pdf  → 6 chunks
+  Parsed P022_Victor_Tanaka_lab_report.pdf  → 5 chunks
+  Parsed P023_Wendy_Okafor_lab_report.pdf  → 6 chunks
+  Parsed P024_Xena_Williams_lab_report.pdf  → 5 chunks
+  Parsed P025_Yusuf_Andersen_lab_report.pdf  → 5 chunks
+  Parsed P026_Zara_Johansson_lab_report.pdf  → 6 chunks
+  Parsed P027_Aiden_Ferreira_lab_report.pdf  → 6 chunks
+  Parsed P028_Brenda_Hassan_lab_report.pdf  → 6 chunks
+  Parsed P029_Chen_Smith_lab_report.pdf  → 6 chunks
+  Parsed P030_Daria_Das_lab_report.pdf  → 6 chunks
+  Parsed P031_Elias_Lee_lab_report.pdf  → 6 chunks
+  Parsed P032_Fiona_Russo_lab_report.pdf  → 5 chunks
+  Parsed P033_Grant_Hassan_lab_report.pdf  → 6 chunks
+  Parsed P034_Hana_Patel_lab_report.pdf  → 5 chunks
+  Parsed P035_Igor_Okafor_lab_report.pdf  → 5 chunks
+  Parsed P036_Jaya_Kim_lab_report.pdf  → 6 chunks
+  Parsed P037_Kim_Nakamura_lab_report.pdf  → 6 chunks
+  Parsed P038_Lars_Andersen_lab_report.pdf  → 6 chunks
+  Parsed P039_Mia_Nguyen_lab_report.pdf  → 6 chunks
+  Parsed P040_Noah_Tanaka_lab_report.pdf  → 6 chunks
+  Parsed P041_Olga_Nguyen_lab_report.pdf  → 6 chunks
+  Parsed P042_Pedro_Okafor_lab_report.pdf  → 5 chunks
+  Parsed P043_Qing_Liu_lab_report.pdf  → 6 chunks
+  Parsed P044_Rita_Lee_lab_report.pdf  → 5 chunks
+  Parsed P045_Sam_Johansson_lab_report.pdf  → 5 chunks
+  Parsed P046_Tara_Singh_lab_report.pdf  → 6 chunks
+  Parsed P047_Usman_Garcia_lab_report.pdf  → 6 chunks
+  Parsed P048_Vera_Rossi_lab_report.pdf  → 6 chunks
+  Parsed P049_Wei_Park_lab_report.pdf  → 6 chunks
+  Parsed P050_Yuki_Ali_lab_report.pdf  → 6 chunks
+
+ Indexed 285 chunks from 50 PDFs
+---sample output ends----
+
+#querying
+PS D:\Microsoft VS Code> & C:\Users\Ajay\AppData\Local\Programs\Python\Python310\python.exe e:/es_ingest.py --search "elevated creatinine kidney"
+python es_ingest.py --search "kidney creatinine" --size 20   # show 20 unique patients
+python es_ingest.py --search "kidney" --all 
+
+----sample output----
+
+
+ Query : 'elevated creatinine kidney'
+    ES total chunk hits : 110  (each patient has ~6 section chunks — multiply patients × sections)
+    Unique patients matched : 30  (showing top 10, best chunk per patient)
+
+────────────────────────────────────────────────────────────────────────
+  #1  [P004]  Diana Nguyen Patient ID: P004  |  score: 10.98
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section matched: Interpreting Physician
+       Context   : …Priya Sharma (Pulmonology / Nephrologist) — April 6, 2025
+Primary Diagnosis: Chronic Kidney Disease (Stage 3)
+eGFR 38 — consistent with CKD Stage 3b. Creatinine and BUN elevated.…
+
+────────────────────────────────────────────────────────────────────────
+  #2  [P014]  Nadia Brown Patient ID: P014  |  score: 10.98
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section matched: Interpreting Physician
+       Context   : …Priya Sharma (Pulmonology / Nephrologist) — August 20, 2025
+Primary Diagnosis: Chronic Kidney Disease (Stage 3)
+eGFR 38 — consistent with CKD Stage 3b. Creatinine and BUN elevated.…
+
+────────────────────────────────────────────────────────────────────────
+  #3  [P024]  Xena Williams Patient ID: P024  |  score: 10.98
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section matched: Interpreting Physician
+       Context   : …Priya Sharma (Pulmonology / Nephrologist) — September 15, 2025
+Primary Diagnosis: Chronic Kidney Disease (Stage 3)
+eGFR 38 — consistent with CKD Stage 3b. Creatinine and BUN elevated.…
+
+────────────────────────────────────────────────────────────────────────
+  #4  [P034]  Hana Patel Patient ID: P034  |  score: 10.98
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section matched: Interpreting Physician
+       Context   : …Priya Sharma (Pulmonology / Nephrologist) — December 5, 2025
+Primary Diagnosis: Chronic Kidney Disease (Stage 3)
+eGFR 38 — consistent with CKD Stage 3b. Creatinine and BUN elevated.…
+
+────────────────────────────────────────────────────────────────────────
+  #5  [P044]  Rita Lee Patient ID: P044  |  score: 10.98
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section matched: Interpreting Physician
+       Context   : …Priya Sharma (Pulmonology / Nephrologist) — December 5, 2025
+Primary Diagnosis: Chronic Kidney Disease (Stage 3)
+eGFR 38 — consistent with CKD Stage 3b. Creatinine and BUN elevated.…
+
+────────────────────────────────────────────────────────────────────────
+  #6  [P009]  Ivan Singh Patient ID: P009  |  score: 4.95
+       Diagnosis : Polycystic Ovary Syndrome (PCOS) follow-up.
+       Specialty : Endocrinologist  |  Section matched: Interpreting Physician
+       Context   : …Mild insulin resistance present — HOMA-IR
+elevated. AMH markedly elevated. Ultrasound confirmed polycystic ovarian morphology. Lifestyle modification
+first-line; metformin for insulin resistance.
+Signed: Dr.…
+
+────────────────────────────────────────────────────────────────────────
+  #7  [P019]  Sara Garcia Patient ID: P019  |  score: 4.95
+       Diagnosis : Polycystic Ovary Syndrome (PCOS) follow-up.
+       Specialty : Endocrinologist  |  Section matched: Interpreting Physician
+       Context   : …Mild insulin resistance present — HOMA-IR
+elevated. AMH markedly elevated. Ultrasound confirmed polycystic ovarian morphology. Lifestyle modification
+first-line; metformin for insulin resistance.
+Signed: Dr.…
+
+────────────────────────────────────────────────────────────────────────
+  #8  [P029]  Chen Smith Patient ID: P029  |  score: 4.95
+       Diagnosis : Polycystic Ovary Syndrome (PCOS) follow-up.
+       Specialty : Endocrinologist  |  Section matched: Interpreting Physician
+       Context   : …Mild insulin resistance present — HOMA-IR
+elevated. AMH markedly elevated. Ultrasound confirmed polycystic ovarian morphology. Lifestyle modification
+first-line; metformin for insulin resistance.
+Signed: Dr.…
+
+────────────────────────────────────────────────────────────────────────
+  #9  [P039]  Mia Nguyen Patient ID: P039  |  score: 4.95
+       Diagnosis : Polycystic Ovary Syndrome (PCOS) follow-up.
+       Specialty : Endocrinologist  |  Section matched: Interpreting Physician
+       Context   : …Mild insulin resistance present — HOMA-IR
+elevated. AMH markedly elevated. Ultrasound confirmed polycystic ovarian morphology. Lifestyle modification
+first-line; metformin for insulin resistance.
+Signed: Dr.…
+
+────────────────────────────────────────────────────────────────────────
+  #10  [P049]  Wei Park Patient ID: P049  |  score: 4.95
+       Diagnosis : Polycystic Ovary Syndrome (PCOS) follow-up.
+       Specialty : Endocrinologist  |  Section matched: Interpreting Physician
+       Context   : …Mild insulin resistance present — HOMA-IR
+elevated. AMH markedly elevated. Ultrasound confirmed polycystic ovarian morphology. Lifestyle modification
+first-line; metformin for insulin resistance.
+Signed: Dr.…
+
+────────────────────────────────────────────────────────────────────────
+  Tip: use --size N to see more results, --all to disable deduplication
+
+---sample output ends---
+===========================================
+Analytical queries — term aggregations over abnormal_tests (which conditions co-occur?), avg_abnormal_count bucketed by diagnosis, 
+specialty-level heatmaps, and patient-level lookups by patient_id. These are pure ES aggregations — fast and pre-indexed.
+
+Search queries — full-text on chunk_text and diagnosis with fuzzy matching, filtered by section (e.g. only Thyroid chunks), 
+boosted by abnormal_tests, and deduplicated per patient. The highlight field gives us contextual snippets.
+
+Visualizations: we can build — diagnosis distribution (bar/pie), abnormal test frequency (horizontal bar), average abnormal count 
+per condition (grouped bar), per-specialty breakdowns, and scatter plots of individual patients colored by condition.
+
+Examples:
+Full-text search — fuzzy
+> python es_ingest.py --search "elevated TSH hypothyroid"
+Hits Thyroid Function chunks. Fuzzy matching catches misspellings. Returns best chunk per patient with highlighted context.
+
+##Aggregation — abnormal test frequency
+Returns keyword counts of every flagged test name. Powers the horizontal bar chart. Run via --stats.
+
+GET lab_reports/_search
+{
+  "size": 0,
+  "aggs": {
+    "top_abnormal": {
+      "terms": { "field": "abnormal_tests", "size": 20 }
+    }
+  }
+}
+
+##Filtered search — by section
+Restricts to a single section chunk type. Avoids false positives from the Header or CBC chunks mentioning the same term.
+GET lab_reports/_search
+{
+  "query": {
+    "bool": {
+      "must": { "match": { "chunk_text": "microalbumin" } },
+      "filter": { "term": { "section": "Diabetes & Renal" } }
+    }
+  }
+}
+
+##Avg abnormal count per diagnosis
+Compares lab severity across conditions. Sepsis and Cirrhosis typically rank highest; Hypothyroidism and PCOS lower.
+GET lab_reports/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_diagnosis": {
+      "terms": { "field": "diagnosis.keyword", "size": 20 },
+      "aggs": { "avg_abn": { "avg": { "field": "abnormal_count" } } }
+    }
+  }
+}
+
+---------Results & Explaination --------------
+Result:
+{
+  "took": 1,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 285,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "by_diagnosis": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "Allergic Asthma follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 0.8333333333333334
+          }
+        },
+        {
+          "key": "Bacterial Sepsis follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 2
+          }
+        },
+        {
+          "key": "Hypertensive Heart Disease follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 1.1666666666666667
+          }
+        },
+        {
+          "key": "Iron-Deficiency Anaemia follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 1.3333333333333333
+          }
+        },
+        {
+          "key": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 1.1666666666666667
+          }
+        },
+        {
+          "key": "Rheumatoid Arthritis follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 1
+          }
+        },
+        {
+          "key": "Type 2 Diabetes follow-up.",
+          "doc_count": 30,
+          "avg_abn": {
+            "value": 0.6666666666666666
+          }
+        },
+        {
+          "key": "Chronic Kidney Disease (Stage 3) follow-up.",
+          "doc_count": 25,
+          "avg_abn": {
+            "value": 1.4
+          }
+        },
+        {
+          "key": "Hypothyroidism follow-up.",
+          "doc_count": 25,
+          "avg_abn": {
+            "value": 1.2
+          }
+        },
+        {
+          "key": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+          "doc_count": 25,
+          "avg_abn": {
+            "value": 1.6
+          }
+        }
+      ]
+    }
+  }
+}
+
+Explaination:
+Why 285 total hits? The "size": 0 only suppresses returning individual documents in the hits array — but hits.total.value always 
+reports the full document count that the query matched. Since we have no query clause (just aggs), 
+it matches every document in the index: all 285 chunks. The aggregation then runs over all 285 of those. This is expected and correct.
+Why does doc_count show 30/25, not 5? Each of our 5 patients per diagnosis contributes ~6 section chunks each:
+
+8 diagnoses × 5 patients × 6 chunks = 30 docs per bucket
+2 diagnoses with slightly fewer sections = 25 docs per bucket
+
+So doc_count: 30 doesn't mean 30 patients — it means 30 chunks belonging to that diagnosis. The avg_abn is averaging 
+abnormal_count across all those chunks, including the Header and Interpreting Physician sections which have 0 abnormal tests. 
+That's why the averages look low (0.67–2.0) rather than reflecting the true per-patient abnormal count.
+
+
+---------Result & Explaination ends-------------------
+##abnormal count per patient, not per chunk
+So > To get a more meaningful average — abnormal count per patient, not per chunk — we should filter 
+to one representative chunk, like section: "Header" or use a max sub-aggregation instead of avg.
+
+GET lab_reports/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_diagnosis": {
+      "terms": { "field": "diagnosis.keyword", "size": 20 },
+      "aggs": {
+        "avg_abn": { "avg": { "field": "abnormal_count" } },
+        "max_abn": { "max": { "field": "abnormal_count" } },
+        "patient_count": { "cardinality": { "field": "patient_id" } }
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "must_not": [
+        { "terms": { "section": ["Header", "Interpreting Physician"] } }
+      ]
+    }
+  }
+}
+
+Note**
+This excludes the zero-flag structural sections so the average reflects only clinical test sections. The cardinality sub-agg also gives 
+us the true unique patient count per bucket as a sanity check — it should return 5 for every diagnosis.
+
+----------------sample output------------
+
+{
+  "took": 16,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 185,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "by_diagnosis": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "Allergic Asthma follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 1.25
+          },
+          "max_abn": {
+            "value": 4
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Bacterial Sepsis follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 3
+          },
+          "max_abn": {
+            "value": 5
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Hypertensive Heart Disease follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 1.75
+          },
+          "max_abn": {
+            "value": 4
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Iron-Deficiency Anaemia follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 2
+          },
+          "max_abn": {
+            "value": 4
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Polycystic Ovary Syndrome (PCOS) follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 1.75
+          },
+          "max_abn": {
+            "value": 4
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Rheumatoid Arthritis follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 1.5
+          },
+          "max_abn": {
+            "value": 3
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Type 2 Diabetes follow-up.",
+          "doc_count": 20,
+          "avg_abn": {
+            "value": 1
+          },
+          "max_abn": {
+            "value": 2
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Chronic Kidney Disease (Stage 3) follow-up.",
+          "doc_count": 15,
+          "avg_abn": {
+            "value": 2.3333333333333335
+          },
+          "max_abn": {
+            "value": 6
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Hypothyroidism follow-up.",
+          "doc_count": 15,
+          "avg_abn": {
+            "value": 2
+          },
+          "max_abn": {
+            "value": 2
+          },
+          "patient_count": {
+            "value": 5
+          }
+        },
+        {
+          "key": "Liver Cirrhosis (Child-Pugh B) follow-up.",
+          "doc_count": 15,
+          "avg_abn": {
+            "value": 2.6666666666666665
+          },
+          "max_abn": {
+            "value": 5
+          },
+          "patient_count": {
+            "value": 5
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+----------------sample output ends-----------
+
+##Patient lookup by ID
+Returns all section chunks for one patient. Useful for a full-report view — iterate chunk_index to reconstruct the report.
+
+GET lab_reports/_search
+{
+  "query": { "term": { "patient_id": "P001" } }
+}
+
+##Co-occurrence — patients with 2+ specific flags
+Finds patients flagged for both HbA1c and microalbumin — 
+classic diabetic nephropathy pattern. Combine with a term on section to restrict to the relevant chunk.
+GET lab_reports/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "abnormal_tests": ["HbA1c", "Microalbumin"] } },
+        { "range": { "abnormal_count": { "gte": 2 } } }
+      ]
+    }
+  }
+}
+
+##Section-filtered search
+Restrict to a specific section chunk to avoid false positives from Header or CBC sections.
+GET lab_reports/_search
+{
+  "query": {
+    "bool": {
+      "must": { "match": { "chunk_text": "microalbumin nephropathy" } },
+      "filter": { "term": { "section": "Diabetes & Renal" } }
+    }
+  },
+  "highlight": { "fields": { "chunk_text": {} } }
+}
+
+##Keyword array — term filter on abnormal_tests
+Find all chunks where a specific test was flagged. Exact keyword match on the array field.
+GET lab_reports/_search
+{
+  "query": { "term": { "abnormal_tests": "TSH" } },
+  "_source": ["patient_name", "patient_id", "diagnosis", "abnormal_tests"]
+}
+
+##Co-occurrence — multiple abnormal flags
+Patients with both HbA1c and Microalbumin flagged — classic diabetic nephropathy pattern.
+
+GET lab_reports/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "terms": { "abnormal_tests": ["HbA1c", "Microalbumin"] } },
+        { "range":  { "abnormal_count": { "gte": 2 } } }
+      ]
+    }
+  }
+}
+
+##Range query — high abnormal_count chunks
+Find section chunks with 3 or more abnormal tests — the most lab-severe patients.
+GET lab_reports/_search
+{
+  "query": { "range": { "abnormal_count": { "gte": 3 } } },
+  "sort": [{ "abnormal_count": "desc" }],
+  "_source": ["patient_id", "patient_name", "section", "abnormal_count", "abnormal_tests"]
+}
+
+#For semnatic search
+PS D:\Microsoft VS Code> & C:\Users\Ajay\AppData\Local\Programs\Python\Python310\python.exe e:/ES_Wrk_Gen+Ing+Search/es_ingest_semantic.py --ingest
+
+python es_ingest_semantic.py --search   "diabetes high glucose"
+python es_ingest_semantic.py --semantic "patient with poor kidney function and high sugar"
+
+---------output---------------
+
+ [Semantic kNN] Query : 'patient with poor kidney function and high sugar'
+    Raw hits : 10  |  Showing : 10 (deduped by patient)
+
+────────────────────────────────────────────────────────────────────────
+  #1  [P021]  Uma Müller Patient ID: P021  |  score: 0.7718
+       Diagnosis : Type 2 Diabetes follow-up.
+       Specialty : Endocrinologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #2  [P031]  Elias Lee Patient ID: P031  |  score: 0.7717
+       Diagnosis : Type 2 Diabetes follow-up.
+       Specialty : Endocrinologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #3  [P041]  Olga Nguyen Patient ID: P041  |  score: 0.7716
+       Diagnosis : Type 2 Diabetes follow-up.
+       Specialty : Endocrinologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #4  [P011]  Kevin Andersen Patient ID: P011  |  score: 0.7712
+       Diagnosis : Type 2 Diabetes follow-up.
+       Specialty : Endocrinologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #5  [P001]  Aarav Ferreira Patient ID: P001  |  score: 0.7699
+       Diagnosis : Type 2 Diabetes follow-up.
+       Specialty : Endocrinologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #6  [P004]  Diana Nguyen Patient ID: P004  |  score: 0.7546
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #7  [P024]  Xena Williams Patient ID: P024  |  score: 0.7542
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #8  [P014]  Nadia Brown Patient ID: P014  |  score: 0.7541
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #9  [P034]  Hana Patel Patient ID: P034  |  score: 0.753
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+  #10  [P044]  Rita Lee Patient ID: P044  |  score: 0.753
+       Diagnosis : Chronic Kidney Disease (Stage 3) follow-up.
+       Specialty : Nephrologist  |  Section: Interpreting Physician
+
+────────────────────────────────────────────────────────────────────────
+---------output ends----------
+
+python es_ingest_semantic.py --hybrid   "thyroid hormone imbalance"  --size 5
+python es_ingest_semantic.py --stats
+
+##Semantic
+[Every query deliberately avoids the actual indexed terms. "Sluggish thyroid making someone cold and tired" doesn't appear anywhere in our data, 
+but the embedding space connects it to "fatigue, 
+weight gain, cold intolerance" in the Hypothyroidism notes. These would score zero in BM25.]
+
+#Patient with high blood sugar and kidney stress
+None of these words appear verbatim — "blood sugar" maps to Glucose/HbA1c, 
+"kidney stress" maps to Creatinine/eGFR/BUN/Microalbumin. BM25 would miss this entirely.
+
+python es_ingest_semantic.py --semantic "patient with high blood sugar and kidney stress"
+
+Finds: Type 2 Diabetes, CKD Stage 3
+Hits: Diabetes & Renal, Basic Metabolic
+
+#Sluggish thyroid making someone cold and tired and gaining weight
+"Sluggish thyroid", "cold", "tired", "gaining weight" are symptom descriptions from the Hypothyroidism notes — not test names. 
+The embedding space links these to "fatigue, weight gain, cold intolerance" in the indexed text.
+
+python es_ingest_semantic.py --semantic "sluggish thyroid making someone cold and tired and gaining weight"
+
+Finds: Hypothyroidism
+Hits: Interpreting Physician notes, Thyroid Function
+
+#Liver is struggling to make proteins and blood is not clotting well
+"Liver struggling to make proteins" → Albumin LOW + "synthetic function impaired". 
+"Blood not clotting" → INR HIGH + Platelets LOW. The cirrhosis notes contain exactly this clinical language.
+
+python es_ingest_semantic.py --semantic "liver is struggling to make proteins and blood is not clotting well"
+
+Finds: Liver Cirrhosis
+Hits: Basic Metabolic, Interpreting Physician
+
+#Young woman with irregular periods and hormone imbalance
+"Irregular periods" and "hormone imbalance" don't appear in the data. But the 
+PCOS notes mention LH:FSH ratio, testosterone, AMH — the embedding space connects female hormonal disorder descriptions to those chunks.
+
+python es_ingest_semantic.py --semantic "young woman with irregular periods and hormone imbalance"
+
+Finds: PCOS
+Hits: Hormonal Panel, Interpreting Physician
+
+#Patient in serious infection with organs starting to fail
+"Organs starting to fail" maps to elevated Lactate, Creatinine, INR, and 
+Procalcitonin — all present in the Sepsis chunks. The notes say "ICU monitoring warranted" and "tissue hypoperfusion".
+
+python es_ingest_semantic.py --semantic "patient in serious infection with organs starting to fail"
+
+Finds: Bacterial Sepsis
+Hits: Infection & Inflammation, Basic Metabolic
+
+#Joints are inflamed and immune system is attacking itself
+"Immune system attacking itself" is classic autoimmune language. RA chunks contain 
+Anti-CCP, RF, ANA — the embedding connects autoimmune attack language to seropositive RA.
+
+python es_ingest_semantic.py --semantic "joints are inflamed and immune system is attacking itself"
+
+Finds: Rheumatoid Arthritis
+Hits: Autoimmune Markers, Interpreting Physician
+
+#Breathing difficulties triggered by allergies and dust
+"Dust" directly maps to "house dust mites" in the Asthma notes. 
+"Breathing difficulties" links to "peak expiratory flow below predicted" and "airflow limitation".
+
+python es_ingest_semantic.py --semantic "breathing difficulties triggered by allergies and dust"
+Finds: Allergic Asthma
+Hits: Allergy & Pulmonary, Interpreting Physician
+
+##Hybrid
+[queries that mix exact clinical terms (like levothyroxine, procalcitonin, DMARD) with paraphrased context. 
+The CRP + procalcitonin + sepsis query is probably our highest-confidence 
+test — both BM25 and kNN will agree strongly, so RRF gives it near-perfect scores.]
+
+#HbA1c elevated poor glycaemic control nephropathy
+BM25 catches "HbA1c" and "nephropathy" exactly (they appear in the notes). kNN 
+catches "poor glycaemic control" → diabetes context. RRF combines both rankings — best precision here.
+
+python es_ingest_semantic.py --hybrid "HbA1c elevated poor glycaemic control nephropathy"
+
+Finds: Type 2 Diabetes
+Why hybrid: mix of exact terms + clinical context
+
+#TSH high levothyroxine thyroid fatigue
+"levothyroxine" appears verbatim in the Hypothyroidism notes → BM25 scores this high. 
+"Fatigue" is conceptual → kNN scores the symptom context. Hybrid wins over either alone.
+
+python es_ingest_semantic.py --hybrid "TSH high levothyroxine thyroid fatigue"
+
+Finds: Hypothyroidism
+Why hybrid: "levothyroxine" is exact, "fatigue" is semantic
+
+#ferritin low iron deficiency anaemia oral supplementation
+"ferritin low" and "ferrous sulphate" are exact keywords. "oral supplementation" is paraphrased — notes say 
+"ferrous sulphate 200 mg". Hybrid catches both.
+
+python es_ingest_semantic.py --hybrid "ferritin low iron deficiency anaemia oral supplementation"
+
+Finds: Iron-Deficiency Anaemia
+Hits: Iron Studies, CBC
+
+#heart failure BNP troponin LVH echocardiogram
+BNP, Troponin I, LVH all appear verbatim in the HTN Heart Disease data. "Heart 
+failure" is conceptual (not literally written). Hybrid surfaces the cardiac chunks with high confidence.
+
+python es_ingest_semantic.py --hybrid "heart failure BNP troponin LVH echocardiogram"
+
+Finds: Hypertensive Heart Disease
+Hits: Cardiac Markers, Interpreting Physician
+
+#CRP procalcitonin sepsis broad spectrum antibiotics ICU
+CRP, Procalcitonin, "broad-spectrum antibiotics", ICU all appear verbatim in sepsis chunks. Hybrid will score this very high — both BM25 and kNN agree.
+
+python es_ingest_semantic.py --hybrid "CRP procalcitonin sepsis broad spectrum antibiotics ICU"
+
+Finds: Bacterial Sepsis
+Highest confidence query in our dataset
+
+#methotrexate DMARD seropositive arthritis erosive joints
+"Methotrexate" and "DMARD" are verbatim in RA notes. "Seropositive arthritis" 
+is partially paraphrased. "Erosive joints" maps to "early erosive changes" — semantic closes the gap.
+
+python es_ingest_semantic.py --hybrid "methotrexate DMARD seropositive arthritis erosive joints"
+
+Finds: Rheumatoid Arthritis
+Hits: Autoimmune Markers, Interpreting Physician
+
+##BM25 wins
+[ important to know when not to use semantic. Test names like Anti-CCP, HOMA-IR, patient IDs, and 
+specialty names are exact-match problems. Embedding them adds noise, not signal.]
+
+#Exact test name lookups
+Exact keyword matches — BM25 retrieves these with perfect precision. Semantic adds no value here because the query IS the indexed term.
+
+python es_ingest_semantic.py --search "Anti-CCP" python es_ingest_semantic.py --search "Procalcitonin" python es_ingest_semantic.py 
+--search "HOMA-IR" python es_ingest_semantic.py --search "AMH testosterone LH FSH" python es_ingest_semantic.py --search "Transferrin Saturation TIBC"
+
+Note**if the query is a lab test name, use --search not --semantic
+
+#Patient ID or name lookup
+Patient IDs and names are keyword fields. BM25 hits them exactly. A semantic query on "P001" would embed a meaningless string and return random results.
+python es_ingest_semantic.py --search "P001" python es_ingest_semantic.py --search "Aarav Ferreira"
+
+Note**Always use --search for IDs and proper names
+
+#Specialty-specific lookups
+Specialty is a keyword field. The embedding of "Nephrologist" tells us nothing the term doesn't. 
+Use BM25 with --all to see all chunks for that specialty.
+
+python es_ingest_semantic.py --search "Nephrologist" --all 
+python es_ingest_semantic.py --search "Hematologist" 
+python es_ingest_semantic.py --search "Gastroenterologist"
+
+##Traps
+[The four failure modes specific to all-MiniLM-L6-v2: 
+single-word vague queries, 
+numeric threshold reasoning (the model can't compare 14.6 > 10), 
+negation (embeddings of "with kidney problems" and "without kidney problems" are nearly identical vectors), 
+and ambiguous cross-condition symptoms like "fatigue and anaemia" which match 5 of our 10 conditions.
+]
+
+#These queries look semantic but will give poor or misleading results with all-MiniLM-L6-v2. 
+#Single-word vague queries
+"Inflammation" embeds to a generic vector that's equidistant from Sepsis, RA, Asthma, and CKD. 
+we'll get low-confidence results across all conditions. Add context.
+
+python es_ingest_semantic.py --semantic "inflammation" # too vague
+python es_ingest_semantic.py --hybrid "acute bacterial infection with systemic inflammation" # better
+
+#Queries with numbers and thresholds
+all-MiniLM-L6-v2 doesn't understand numeric reasoning. "TSH greater than 10" doesn't vector-match to TSH 14.6 better than 
+TSH 2.4 — the model sees "TSH" in both. Use a range query in ES for numeric filtering.
+
+python es_ingest_semantic.py --semantic "TSH greater than 10" # model ignores the number
+
+--Use ES range query instead: 
+GET lab_reports_semantic/_search { "query": { "range": { "abnormal_count": { "gte": 3 } } } }
+
+#Negation queries
+"Patient without kidney problems" embeds almost identically to "patient with kidney problems" — transformers don't reliably encode negation.
+ Use a must_not bool filter for exclusion.
+
+python es_ingest_semantic.py --semantic "patient without kidney problems" # negation ignored
+
+GET lab_reports_semantic/_search { "query": { "bool": { "must_not": { "terms": { "abnormal_tests": ["Creatinine", "eGFR", "BUN"] } } } } }
+
+#Cross-condition ambiguous symptoms
+"Fatigue and anaemia" matches Hypothyroidism, CKD, Iron Deficiency, Cirrhosis, and RA — all have 
+low Hgb and fatigue mentions. The model can't disambiguate without more clinical context.
+
+python es_ingest_semantic.py --semantic "fatigue and anaemia" # matches 5+ conditions
+python es_ingest_semantic.py --hybrid "microcytic anaemia low ferritin iron deficiency" # precise
+
+
+
+
+
+
+
+
+
+
+
