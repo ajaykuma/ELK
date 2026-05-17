@@ -396,7 +396,12 @@ GET pdf-index/_search
 
 --------------------
 Approach: Chunking 
-(refer: E:\GitContent\ELK\ELK\Working_exmpls\Working_with_files) which shows chunking examples and relevant querying
+Why?
+pipeline sends one document per PDF to ES via an ingest pipeline. Chunking requires splitting one PDF into N documents — Logstash's split filter 
+can split on a field value, but it can't run pdfplumber/PyMuPDF to extract and divide text. The Ruby environment in Logstash 
+has no PDF text-extraction library available.
+
+So with chunking:
 No Lucene limit issue
 Each chunk is tiny.
 Example: 2KB–20KB per chunk
@@ -415,4 +420,16 @@ RAG systems
 ChatGPT retrieval
 enterprise search
 vector DBs
+
+Option 1:
+(refer: E:\GitContent\ELK\ELK\Working_exmpls\Working_with_files) which shows chunking examples and relevant querying
+
+Option 2: (refer logstash+externalchunker)
+
+
+
+
+
+
+
 
