@@ -1,7 +1,7 @@
 #paths may have changed, read through and recheck in git 
 #conf file for this exists in 'MyConfigsLS'
 
->>MyConfigsLS/conf.d/logstash_bidata-secure.conf
+>>MyConfigsLS/conf.d/logstash_bidata*.conf
 
 #using logstash to send pdf file to ES and create index automatically
 --get pdf datasets from datasets folder.
@@ -62,10 +62,21 @@ PUT pdf-index
   }
 }
 
+OR
+--If needed, build index with desired shards and replicas before pushing data (or index will be created with default settings)
+PUT /pdf-index
+{
+  "settings": {
+    "number_of_shards": 3
+    , "number_of_replicas": 2
+    , "auto_expand_replicas": false
+  }
+}
 
+GET /_cat/indices/pdf-index?v
 --if conf file not copied and building on your own
 
-$vi /home/hdu/logstash/conf.d/logstash_bidata-secure.conf
+$vi /home/hdu/logstash/conf.d/logstash_bidata_secure_encoding_issues.conf
 
 #paste this content 
 input {
@@ -134,39 +145,141 @@ output {
 #start logstash pointing to this config file
 #change paths according to your setup
 
+$logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bidata_secure_encoding_issues.conf
 
---If needed, build index with desired shards and replicas before pushing data (or index will be created with default settings)
-PUT /pdf-index
+current Logstash pipeline is doing this:
+
+Finds PDFs
+Reads entire PDF binary into memory
+Base64 encodes it
+Sends entire encoded blob into Elasticsearch ingest pipeline (attachment processor most likely)
+
+This will eventually hit architectural limits for large PDFs, especially near or above the Lucene document size limit.
+
+Note**
+Lucene has a hard document size limit of roughly 2GB.
+Elasticsearch stores each indexed document as a Lucene document internally.
 {
-  "settings": {
-    "number_of_shards": 3
-    , "number_of_replicas": 2
-    , "auto_expand_replicas": false
-  }
+  "data": "<base64-encoded huge pdf>"
 }
 
-GET /_cat/indices/pdf-index?v
+because:
 
+Base64 increases size by ~33%
+2GB PDF becomes ~2.66GB encoded
+ingest attachment extraction expands memory even more
+Apache Tika extracts text into massive strings
 
-$logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bidata-secure.conf
+Result:
+indexing failure
+OOM errors
+ingest node crashes
+circuit breaker exceptions
+huge GC pauses
 
---check data
+##Text Extraction Explosion
+The actual issue is usually not the binary size.
+It's the extracted text.
+sample PDF is tiny (~14 pages), but if:
 
-From BI approaches.pdf, ES will extract
-Business Intelligence Concepts and Approaches
-management decision making
-data warehouse
-OLAP systems
-competitive advantage
+scanned books
+legal archives
+medical records
+OCR PDFs
+engineering manuals
 
-From sample_patient.pdf
-Costochondritis
-chest pain
-ibuprofen
-migraines
-Pap smear
+A 2GB PDF can easily extract into:
 
-------------
+tens of millions of characters
+gigantic _source
+unusable search latency
+
+Approach: Chunking (Details at the end)
+(refer: E:\GitContent\ELK\ELK\Working_exmpls\Working_with_files) which shows chunking examples and relevant querying
+
+#If errors: to read PDF binary content through the file input codec, use this (still pushing whole pdf content as binary)
+
+logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bidata_fullpdf_as_content_secure2.conf
+
+---------
+##So modified pipeline
+--working on two files (BI_approaches.pdf,sample_patient.pdf)
+
+input {
+
+  exec {
+    command => "find /home/hdu/datasets/pdfs -name '*.pdf'"
+    interval => 3600
+  }
+
+}
+
+filter {
+
+  split {
+    field => "message"
+  }
+
+  mutate {
+    rename => {
+      "message" => "path"
+    }
+  }
+
+  ruby {
+    code => '
+      require "base64"
+
+      path = event.get("path").strip
+
+      pdf_data = File.binread(path)
+
+      encoded = Base64.strict_encode64(pdf_data)
+
+      event.set("data", encoded)
+    '
+  }
+
+  mutate {
+    add_field => {
+      "filename" => "%{path}"
+    }
+  }
+
+}
+
+output {
+
+  elasticsearch {
+
+    hosts => [
+      "https://localhost:9200",
+      "https://localhost:9201",
+      "https://localhost:9202"
+    ]
+
+    user => "elastic"
+
+    password => "9_W6d34GiGU8gKoZfLlO"
+
+    ssl_enabled => true
+
+    ssl_certificate_authorities => [
+      "/home/hdu/elasticsearch/config/certs/http_ca.crt"
+    ]
+
+    index => "pdf-index"
+
+    pipeline => "pdf-pipeline"
+  }
+
+  stdout {
+    codec => rubydebug
+  }
+
+}
+
+-----------
 Queries:
 GET pdf-index/_search
 {
@@ -282,145 +395,14 @@ GET pdf-index/_search
 }
 
 --------------------
-#If errors: to read PDF binary content through the file input codec
-logstash --path.settings /home/hdu/logstash/ -f /home/hdu/logstash/conf.d/logstash_bidata-secure2.conf
-we can use:
-mode => "read"
-file_completed_action => "log"
-codec => plain { charset => "ISO-8859-1" }
-
-So modified pipeline
-input {
-
-  exec {
-    command => "find /home/hdu/datasets/pdfs -name '*.pdf'"
-    interval => 3600
-  }
-
-}
-
-filter {
-
-  split {
-    field => "message"
-  }
-
-  mutate {
-    rename => {
-      "message" => "path"
-    }
-  }
-
-  ruby {
-    code => '
-      require "base64"
-
-      path = event.get("path").strip
-
-      pdf_data = File.binread(path)
-
-      encoded = Base64.strict_encode64(pdf_data)
-
-      event.set("data", encoded)
-    '
-  }
-
-  mutate {
-    add_field => {
-      "filename" => "%{path}"
-    }
-  }
-
-}
-
-output {
-
-  elasticsearch {
-
-    hosts => [
-      "https://localhost:9200",
-      "https://localhost:9201",
-      "https://localhost:9202"
-    ]
-
-    user => "elastic"
-
-    password => "9_W6d34GiGU8gKoZfLlO"
-
-    ssl_enabled => true
-
-    ssl_certificate_authorities => [
-      "/home/hdu/elasticsearch/config/certs/http_ca.crt"
-    ]
-
-    index => "pdf-index"
-
-    pipeline => "pdf-pipeline"
-  }
-
-  stdout {
-    codec => rubydebug
-  }
-
-}
-
----------------
-current Logstash pipeline is doing this:
-
-Finds PDFs
-Reads entire PDF binary into memory
-Base64 encodes it
-Sends entire encoded blob into Elasticsearch ingest pipeline (attachment processor most likely)
-
-This will eventually hit architectural limits for large PDFs, especially near or above the Lucene document size limit.
-
-Note**
-Lucene has a hard document size limit of roughly 2GB.
-Elasticsearch stores each indexed document as a Lucene document internally.
-{
-  "data": "<base64-encoded huge pdf>"
-}
-
-because:
-
-Base64 increases size by ~33%
-2GB PDF becomes ~2.66GB encoded
-ingest attachment extraction expands memory even more
-Apache Tika extracts text into massive strings
-
-Result:
-
-indexing failure
-OOM errors
-ingest node crashes
-circuit breaker exceptions
-huge GC pauses
-
-##Text Extraction Explosion
-The actual issue is usually not the binary size.
-It's the extracted text.
-sample PDF is tiny (~14 pages), but if:
-
-scanned books
-legal archives
-medical records
-OCR PDFs
-engineering manuals
-
-A 2GB PDF can easily extract into:
-
-tens of millions of characters
-gigantic _source
-unusable search latency
-
-Approach: To use:Chunking
+Approach: Chunking 
+(refer: E:\GitContent\ELK\ELK\Working_exmpls\Working_with_files) which shows chunking examples and relevant querying
 No Lucene limit issue
 Each chunk is tiny.
 Example: 2KB–20KB per chunk
 instead of: multi-GB documents
 
 Better Search
-
 Instead of retrieving whole PDF:
 
 You retrieve:
@@ -433,5 +415,4 @@ RAG systems
 ChatGPT retrieval
 enterprise search
 vector DBs
------------------
-Refer: SetupLS9-bidata.txt
+

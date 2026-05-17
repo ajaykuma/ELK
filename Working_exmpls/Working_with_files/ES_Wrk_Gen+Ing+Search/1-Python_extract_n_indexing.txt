@@ -1,5 +1,9 @@
 #Using Python extractor > text chunking > embeddings (optiional) > ES Buld indexing
 -----------------------------------------
+Use files:
+py-extract.py
+semantic_search.py
+-----------------------------------------
 Advantages:
 
 handles huge PDFs
@@ -222,4 +226,6 @@ for hit in response["hits"]["hits"]:
     print("PAGE:", hit["_source"]["page"])
 
     print(hit["_source"]["text"][:500])
+
+
 

@@ -1,3 +1,11 @@
+--------------
+Refer:
+es_ingest.py (for no embeddings and no semantic search, but chunking, indexing & searching)
+es_ingest_semantic.py (with embeddings, for semantic search, for chunking, indexing & searching)
+generate_reports.py (to generate/synthesize data)
+--------------
+
+
 generate_reports.py — Generates data
 10 distinct ailment profiles (Diabetes, Hypothyroidism, Iron-Deficiency Anaemia, CKD Stage 3, Liver Cirrhosis, 
 Hypertensive Heart Disease, Allergic Asthma, Bacterial Sepsis, PCOS, Rheumatoid Arthritis), each with realistic abnormal lab values. 
