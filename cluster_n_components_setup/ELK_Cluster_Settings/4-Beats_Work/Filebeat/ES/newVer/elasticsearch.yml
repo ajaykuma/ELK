@@ -1,0 +1,27 @@
+- module: elasticsearch
+  server:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_server.json
+      - /home/hdu/cluster-configs/Node1/logs/myclus-*.json.gz   # rotated logs
+
+  gc:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/gc.log
+
+  audit:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_audit.json
+
+  slowlog:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_index_search_slowlog.json
+      - /home/hdu/cluster-configs/Node1/logs/myclus_index_indexing_slowlog.json
+
+  deprecation:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_deprecation.json
