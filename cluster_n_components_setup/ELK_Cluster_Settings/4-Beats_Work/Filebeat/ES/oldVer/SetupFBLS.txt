@@ -190,7 +190,8 @@ start command to publish data
 root@u2:/usr/share/filebeat/bin# ./filebeat -e -c /usr/share/filebeat/filebeat.yml -d publish
 
 #Note**
-Filebeat consists of two main components: inputs and harvesters. These components work together to tail files and send event data to the output that you specify.
+Filebeat consists of two main components: inputs and harvesters. These components work together to tail files and send event data to the 
+output that you specify.
 A harvester is responsible for reading the content of a single file. The harvester reads each file, line by line, and sends the content 
 to the output. One harvester is started for each file. The harvester is responsible for opening and closing the file, which means that 
 the file descriptor remains open while the harvester is running. If a file is removed or renamed while it’s being harvested, 

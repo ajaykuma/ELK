@@ -1,0 +1,268 @@
+hdu@mc1:~/filebeat$ chmod 600 filebeat.yml
+
+hdu@mc1:~/filebeat$ ./filebeat test config -c filebeat.yml
+Config OK
+hdu@mc1:~/filebeat$ ./filebeat test output -c filebeat.yml
+elasticsearch: https://localhost:9200...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+elasticsearch: https://localhost:9201...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+elasticsearch: https://localhost:9202...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+
+hdu@mc1:~/filebeat$ ./filebeat -e -c filebeat.yml
+(with no log-pipeline)
+
+Use the built-in Filebeat elasticsearch module (easiest structured parsing)
+Filebeat has a built-in module that already knows how to parse Elasticsearch logs:
+
+hdu@mc1:~/filebeat$ ./filebeat modules enable elasticsearch
+Enabled elasticsearch
+
+cp filebeat.yml filebeat2.yml
+(with log-pipeline)
+
+vi modules.d/elasticsearch.yml
+<add>
+
+- module: elasticsearch
+  server:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_server.json
+      - /home/hdu/cluster-configs/Node1/logs/myclus-*.json.gz   # rotated logs
+
+  gc:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/gc.log
+
+  audit:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_audit.json
+
+  slowlog:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_index_search_slowlog.json
+      - /home/hdu/cluster-configs/Node1/logs/myclus_index_indexing_slowlog.json
+
+  deprecation:
+    enabled: true
+    var.paths:
+      - /home/hdu/cluster-configs/Node1/logs/myclus_deprecation.json
+
+edit filebeat2.yml
+
+hdu@mc1:~/filebeat$ vi filebeat2.yml
+hdu@mc1:~/filebeat$ ./filebeat test config -c filebeat.yml
+Config OK
+hdu@mc1:~/filebeat$ ./filebeat test output -c filebeat.yml
+elasticsearch: https://localhost:9200...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+elasticsearch: https://localhost:9201...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+elasticsearch: https://localhost:9202...
+  parse url... OK
+  connection...
+    parse host... OK
+    dns lookup... OK
+    addresses: 127.0.0.1
+    dial up... OK
+  TLS...
+    security: server's certificate chain verification is enabled
+    handshake... OK
+    TLS version: TLSv1.3
+    dial up... OK
+  talk to server... OK
+  version: 8.19.0
+
+hdu@mc1:~/filebeat$ ./filebeat setup --pipelines -c filebeat2.yml
+Loaded Ingest pipelines
+
+hdu@mc1:~/filebeat$ ./filebeat setup -c filebeat2.yml
+Index setup finished.
+Loading dashboards (Kibana must be running and reachable)
+
+at filebeat end
+hdu@mc1:~/filebeat$ ./filebeat setup -c filebeat2.yml
+Index setup finished.
+Loading dashboards (Kibana must be running and reachable)
+Loaded dashboards
+Loaded Ingest pipelines
+
+curl -k -u elastic:9_W6d34GiGU8gKoZfLlO \
+  "https://localhost:9200/_cat/indices/filebeat-*?v&h=index,docs.count,store.size"
+
+./filebeat -e -c filebeat2.yml
+
+from Dev
+Check index
+GET _cat/indices/filebeat-*?v
+
+health status index                                 uuid                   pri rep docs.count docs.deleted store.size pri.store.size dataset.size
+green  open   .ds-filebeat-8.19.0-2026.05.18-000001 nXEiJXT6TfSOKOiKicthAg   3   1      10002            0      8.2mb          4.1mb        4.1mb
+
+from curl
+#check indexes created
+curl -k -u elastic:9_W6d34GiGU8gKoZfLlO \
+  "https://localhost:9200/_cat/indices/filebeat-*?v&h=index,docs.count,store.size&s=index"
+index                                 docs.count store.size
+.ds-filebeat-8.19.0-2026.05.18-000001      10002      8.2mb
+
+#check data is split by dataset
+hdu@mc1:~$ curl -k -u elastic:9_W6d34GiGU8gKoZfLlO \
+  "https://localhost:9200/filebeat-*/_search?pretty&size=0" \
+  -H "Content-Type: application/json" -d'
+{
+  "aggs": {
+    "datasets": {
+      "terms": { "field": "event.dataset" }
+    }
+  }
+}'
+{
+  "took" : 8,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 3,
+    "successful" : 3,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 10000,
+      "relation" : "gte"
+    },
+    "max_score" : null,
+    "hits" : [ ]
+  },
+  "aggregations" : {
+    "datasets" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 0,
+      "buckets" : [
+        {
+          "key" : "elasticsearch.audit",
+          "doc_count" : 9771
+        },
+        {
+          "key" : "elasticsearch.server",
+          "doc_count" : 207
+        },
+        {
+          "key" : "elasticsearch.deprecation",
+          "doc_count" : 28
+        }
+      ]
+    }
+  }
+}
+
+go to Stack Monitoring → it will automatically use the pre-built dashboards that were loaded during filebeat setup.
+May take time:
+That section only appears after a few minutes of xpack monitoring data accumulating. Check again in 5 minutes — it should show up once .monitoring-beats-* indices have enough data.
+
+In Index management>
+Filebeat now uses Data Streams instead of regular indices. 
+
+So check if data view exists or create one
+Kibana → Stack Management → Kibana → Data Views → Create data view
+
+Name: filebeat-*
+Index pattern: filebeat-*
+Timestamp field: @timestamp
+Click Save data view to Kibana
+
+Then
+Kibana → Discover → select filebeat-* data view from the dropdown
+
+We can also filter by datasets
+event.dataset : "elasticsearch.server"
+event.dataset : "elasticsearch.audit"
+event.dataset : "elasticsearch.gc"
+
+Filter by log level to find warnings/errors:
+--log.level : "WARN" or log.level : "ERROR"
+
+Check audit logs:
+--event.dataset : "elasticsearch.audit"
+
+Check slowlog:
+--event.dataset : "elasticsearch.slowlog"
+
+Add useful columns in Discover by clicking fields on the left panel:
+
+log.level ← already added
+elasticsearch.cluster.name ← already added
+event.dataset ← add this to see which log type each doc is from
+log.logger ← shows which ES component logged it
+
+We can check for pre-loaded dashboards
+or
+hdu@mc1:~$ ./filebeat/filebeat setup --dashboards -c filebeat/filebeat2.yml \
+  -E setup.kibana.host=http://10.156.0.3:5601
+Loading dashboards (Kibana must be running and reachable)
+
