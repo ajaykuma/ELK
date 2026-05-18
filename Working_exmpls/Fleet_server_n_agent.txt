@@ -1,0 +1,477 @@
+##working with Fleet server and agents
+--------------------------------
+Add fleet server: https://10.156.0.4:8220
+
+curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.19.0-linux-x86_64.tar.gz
+tar xzvf elastic-agent-8.19.0-linux-x86_64.tar.gz
+cd elastic-agent-8.19.0-linux-x86_64
+
+--Installing Agent
+
+Options:
+sudo ./elastic-agent install \
+  --fleet-server-es=https://127.0.0.1:9200 \
+  --fleet-server-service-token=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3NzkxMjA2MjY2ODE6S21TVk9GUl9USFNJc3p6Y0twNDZFZw \
+  --fleet-server-policy=fleet-server-policy \
+  --fleet-server-es-ca-trusted-fingerprint=2b154f34ec9f233eab35c7d698e69a0b11771b50f0c6d7364e119b1573a790ca \
+  --fleet-server-port=8220
+  --certificate-authorities=/home/hdu/elasticsearch/config/certs/http_ca.crt 
+
+<optionally>
+--fleet-server-cert=/path/fleet-server.crt
+--fleet-server-cert-key=/path/fleet-server.key
+
+OR
+sudo ./elastic-agent install \
+  --fleet-server-es=https://192.168.1.10:9200 \
+  --fleet-server-service-token=TOKEN \
+  --fleet-server-policy=fleet-server-policy \
+  --fleet-server-port=8220 \
+  --insecure
+
+--We use
+hdu@elk2:~/elastic-agent-8.19.0-linux-x86_64$ sudo ./elastic-agent install \
+  --fleet-server-es=https://127.0.0.1:9200 \
+  --fleet-server-service-token=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3NzkxMjA2MjY2ODE6S21TVk9GUl9USFNJc3p6Y0twNDZFZw \
+  --fleet-server-policy=fleet-server-policy \
+  --fleet-server-es-ca-trusted-fingerprint=2b154f34ec9f233eab35c7d698e69a0b11771b50f0c6d7364e119b1573a790ca \
+  --fleet-server-port=8220
+  --certificate-authorities=/home/hdu/elasticsearch/config/certs/http_ca.crt
+Elastic Agent will be installed at /opt/Elastic/Agent and will run as a service. Do you want to continue? [Y/n]:Y
+[=   ] Service Started  [11s] Elastic Agent successfully installed, starting enrollment.
+[====] Waiting For Enroll...  [13s] {"log.level":"info","@timestamp":"2026-05-18T16:20:06.624Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.(*enrollCmd).prepareFleetTLS","file.name":"cmd/enroll_cmd.go","file.line":453},"message":"Generating self-signed certificate for Fleet Server","ecs.version":"1.6.0"}
+[=== ] Waiting For Enroll...  [14s] {"log.level":"info","@timestamp":"2026-05-18T16:20:07.509Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.(*enrollCmd).daemonReloadWithBackoff","file.name":"cmd/enroll_cmd.go","file.line":499},"message":"Restarting agent daemon, attempt 0","ecs.version":"1.6.0"}
+[   =] Waiting For Enroll...  [16s] {"log.level":"info","@timestamp":"2026-05-18T16:20:09.512Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.waitForFleetServer.func1","file.name":"cmd/enroll_cmd.go","file.line":811},"message":"Waiting for Elastic Agent to start Fleet Server","ecs.version":"1.6.0"}
+[   =] Waiting For Enroll...  [20s] {"log.level":"info","@timestamp":"2026-05-18T16:20:13.515Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.waitForFleetServer.func1","file.name":"cmd/enroll_cmd.go","file.line":825},"message":"Fleet Server - Running on policy with Fleet Server integration: fleet-server-policy; missing config fleet.agent.id (expected during bootstrap process)","ecs.version":"1.6.0"}
+[ ===] Waiting For Enroll...  [20s] {"log.level":"info","@timestamp":"2026-05-18T16:20:13.709Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.(*enrollCmd).enrollWithBackoff","file.name":"cmd/enroll_cmd.go","file.line":536},"message":"Starting enrollment to URL: https://elk2:8220/","ecs.version":"1.6.0"}
+[ ===] Waiting For Enroll...  [21s] {"log.level":"info","@timestamp":"2026-05-18T16:20:15.288Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.(*enrollCmd).daemonReloadWithBackoff","file.name":"cmd/enroll_cmd.go","file.line":499},"message":"Restarting agent daemon, attempt 0","ecs.version":"1.6.0"}
+{"log.level":"info","@timestamp":"2026-05-18T16:20:15.290Z","log.origin":{"function":"github.com/elastic/elastic-agent/internal/pkg/agent/cmd.(*enrollCmd).Execute","file.name":"cmd/enroll_cmd.go","file.line":317},"message":"Successfully triggered restart on running Elastic Agent.","ecs.version":"1.6.0"}
+Successfully enrolled the Elastic Agent.
+[ ===] Done  [21s]
+Elastic Agent has been successfully installed.
+-bash: --certificate-authorities=/home/hdu/elasticsearch/config/certs/http_ca.crt: No such file or directory
+
+
+hdu@elk2:~/elastic-agent-8.19.0-linux-x86_64$ sudo systemctl status elastic-agent
+elastic-agent.service - Elastic Agent is a unified agent to observe, monitor and protect your system.
+     Loaded: loaded (/etc/systemd/system/elastic-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Mon 2026-05-18 16:20:04 UTC; 2min 32s ago
+   Main PID: 14628 (elastic-agent)
+      Tasks: 72 (limit: 19180)
+     Memory: 671.3M
+        CPU: 13.730s
+     CGroup: /system.slice/elastic-agent.service
+             ├─14628 elastic-agent
+             ├─14756 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/fleet-server --agent-mode -E logging.level=debug ->
+             ├─14796 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/agentbeat filebeat -E setup.ilm.enabled=false -E s>
+             ├─14807 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/agentbeat metricbeat -E setup.ilm.enabled=false -E>
+             ├─14818 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/agentbeat filebeat -E setup.ilm.enabled=false -E s>
+             ├─14828 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/agentbeat metricbeat -E setup.ilm.enabled=false -E>
+             └─14837 /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components/agentbeat metricbeat -E setup.ilm.enabled=false -E>
+
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.065Z","message":"Uptime: 3.040472127s>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.065Z","message":"Stopping metrics log>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.065Z","message":"Stats endpoint (/opt>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.065Z","message":"metricbeat stopped.">
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.381Z","message":"add_cloud_metadata: >
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.385Z","message":"Total metrics","comp>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.385Z","message":"Uptime: 3.035572398s>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.385Z","message":"Stopping metrics log>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.385Z","message":"Stats endpoint (/opt>
+May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"2026-05-18T16:20:09.385Z","message":"metricbeat stopped.">
+
+Fleet Server connected
+You can now continue enrolling agents with Fleet.
+
+<click on continue enrolling>
+
+Add agent
+Add Elastic Agents to your hosts to collect data and send it to the Elastic Stack.[Later]
+
+
+Now lets add Integrations:
+Click on Fleet > Fleet Server Policy > Add integration
+
+Custom Logs (Deprecated)
+path: /var/auth/log
+dataset: customdata
+
+==================================
+Accessing..
+
+#From Data Views:
+logs-*
+
+Then check in Discover:
+Data view - logs-*
+Filter using: data_stream.dataset
+<save your discover> CustomData from auth logs
+
+Find in Kibana > Saved Objects 
+
+#From Dev:
+
+GET logs-customdata-default/_search
+{
+  "size": 1
+}
+
+--shows fields like:
+agent.id
+agent.name
+agent.type
+elastic_agent.id
+host.name
+data_stream.dataset
+event.module
+input.type
+
+GET logs-customdata-default/_settings
+
+Look for :  "final_pipeline": ".fleet_final_pipeline-1",
+
+and then GET _ingest/pipeline/.fleet_final_pipeline-1
+
+#We can also check in Fleet > Datastreams 
+or from Fleet Server Policy.
+
+============================================
+on elk2 machine:
+
+Mysql:
+> hdu@mc1:~$ sudo systemctl status mysql
+
+> hdu@mc1:~$ ls /usr/bin/mysql*
+
+> sudo mysql
+
+> mysql> SELECT user, host, plugin FROM mysql.user;
+
+> mysql> ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Summer12@winter';
+
+> mysql> flush privileges;
+
+Then enable logs in Mysql:
+
+log_error = /var/log/mysql/error.log
+# Here you can see queries with especially long duration
+slow_query_log          = 1
+slow_query_log_file     = /var/log/mysql/mysql-slow.log
+long_query_time = 2
+log-queries-not-using-indexes
+
+#So we will track:
+#queries taking >2 sec get logged
+#queries not using indexes also logged
+
+general_log = 1
+general_log_file = /var/log/mysql/query.log
+
+#This logs EVERY query.
+#Warning:
+#high disk usage
+#performance overhead
+#can grow extremely fast
+
+#Enable binary logs (optional)
+#Useful for:
+
+#replication
+#point-in-time recovery
+#auditing
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_expire_logs_seconds = 2592000
+
+sudo systemctl restart mysql
+
+Now we see:
+hdu@mc1:~$ ls -all /var/log/mysql
+total 32
+drwxr-x---  2 mysql adm    4096 May 18 17:50 .
+drwxrwxr-x 10 root  syslog 4096 May 18 17:30 ..
+-rw-r-----  1 mysql adm    6187 May 18 17:50 error.log
+-rw-r-----  1 mysql mysql   157 May 18 17:50 mysql-bin.000001
+-rw-r-----  1 mysql mysql    32 May 18 17:50 mysql-bin.index
+-rw-r-----  1 mysql mysql   178 May 18 17:50 mysql-slow.log
+-rw-r-----  1 mysql mysql   862 May 18 17:50 query.log
+
+mysql> SELECT SLEEP(3);
++----------+
+| SLEEP(3) |
++----------+
+|        0 |
++----------+
+1 row in set (3.00 sec)
+
+mysql> SELECT SLEEP(3);
++----------+
+| SLEEP(3) |
++----------+
+|        0 |
++----------+
+1 row in set (3.00 sec)
+
+
+hdu@mc1:~$ sudo tail -f /var/log/mysql/mysql-slow.log
+# Time: 2026-05-18T17:51:30.782771Z
+# User@Host: root[root] @ localhost []  Id:     8
+# Query_time: 3.000277  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1
+SET timestamp=1779126687;
+SELECT SLEEP(3);
+# Time: 2026-05-18T17:51:35.672962Z
+# User@Host: root[root] @ localhost []  Id:     8
+# Query_time: 3.000286  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1
+SET timestamp=1779126692;
+SELECT SLEEP(3);
+
+
+Now in ES: (from kibana)
+
+Add Agent >
+
+Now on Host where mysql is running:
+
+curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.19.0-linux-x86_64.tar.gz
+tar xzvf elastic-agent-8.19.0-linux-x86_64.tar.gz
+cd elastic-agent-8.19.0-linux-x86_64
+hdu@mc1:~/elastic-agent-8.19.0-linux-x86_64$ sudo ./elastic-agent install --url=https://10.156.0.4:8220 --enrollment-token=a3hadVBKNEJGRWhyRWV2c1pPbWE6RHMyb0NYMHp5SkxOMTNlNWRpOXhudw== --insecure
+
+Agent enrollment confirmed
+
+sudo systemctl status elastic-agent
+ here in Agent policy2, add integration
+
+Add Mysql
+Integration name: mysql-1
+
+Specify paths:
+MySQL slowlog logs (log)
+/var/log/mysql/mysql-slow.log
+
+MySQL error logs
+/var/log/mysql/error.log
+/var/log/mysql/query.log
+/var/log/mysql/mysql-bin.*
++Collect metrics from MySQL hosts
++Collect replica status metrics from MySQL hosts
+
+<saveand continue>
+
+on mysql machine:
+login and 
+CREATE USER 'elastic_monitor'@'localhost'
+IDENTIFIED BY 'StrongPassword';
+
+GRANT PROCESS, REPLICATION CLIENT, SELECT
+ON *.* TO 'elastic_monitor'@'localhost';
+
+FLUSH PRIVILEGES;
+
+Now edit integrations to add these in advanced cofigurations.
+------------------------------------------------------------
+Now look in dashboards for pre-built dashboards
+
+[Metrics MySQL] Database Overview
+
+Shows operational metrics like:
+
+active connections
+queries/sec
+buffer pool usage
+thread stats
+InnoDB activity
+temp tables
+cache hit ratios
+
+--coming from metrics-mysql.status-default
+
+[Logs MySQL] Overview
+
+Shows:
+
+error logs
+slow query logs
+warnings
+crashes
+deadlocks
+startup/shutdown events
+
+--coming from logs-mysql.error-default, logs-mysql.slowlog-default
+
+If using replication
+[Metrics MySQL] Replica Status
+
+Useful if MySQL replication exists.
+
+Shows:
+
+replica lag
+IO thread status
+SQL thread status
+replication errors
+
+From Discover:
+data_stream.dataset : mysql.status
+data_stream.dataset : mysql.slowlog
+
+or from dashboards.
+
+------------------
+Also on machine: pip install mysql-connector-python
+in mysql_runs.py
+
+import mysql.connector
+import random
+import time
+from datetime import datetime
+
+# -----------------------------
+# MySQL Connection
+# -----------------------------
+conn = mysql.connector.connect(
+    host="127.0.0.1",
+    port=3306,
+    user="root",          # change if needed
+    password="YOUR_PASSWORD"
+)
+
+cursor = conn.cursor()
+
+# -----------------------------
+# Create Database
+# -----------------------------
+cursor.execute("CREATE DATABASE IF NOT EXISTS demo_observability")
+cursor.execute("USE demo_observability")
+
+# -----------------------------
+# Create Table
+# -----------------------------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    product_name VARCHAR(100),
+    quantity INT,
+    price DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+conn.commit()
+
+print("Database and table ready.")
+
+# -----------------------------
+# Sample Data
+# -----------------------------
+customers = [
+    "Ajay", "John", "Alice", "Bob",
+    "Maria", "David", "Emma"
+]
+
+products = [
+    "Laptop", "Phone", "Keyboard",
+    "Mouse", "Monitor", "Tablet"
+]
+
+# -----------------------------
+# Infinite Loop
+# -----------------------------
+while True:
+    try:
+        # ---------------------------------
+        # INSERT
+        # ---------------------------------
+        customer = random.choice(customers)
+        product = random.choice(products)
+        quantity = random.randint(1, 5)
+        price = round(random.uniform(50, 2000), 2)
+
+        insert_query = """
+        INSERT INTO orders
+        (customer_name, product_name, quantity, price)
+        VALUES (%s, %s, %s, %s)
+        """
+
+        cursor.execute(insert_query, (
+            customer,
+            product,
+            quantity,
+            price
+        ))
+
+        conn.commit()
+
+        print(f"[{datetime.now()}] INSERTED order")
+
+        # ---------------------------------
+        # SELECT
+        # ---------------------------------
+        cursor.execute("""
+        SELECT * FROM orders
+        ORDER BY id DESC
+        LIMIT 5
+        """)
+
+        rows = cursor.fetchall()
+
+        print("LATEST ORDERS:")
+        for row in rows:
+            print(row)
+
+        # ---------------------------------
+        # UPDATE
+        # ---------------------------------
+        cursor.execute("""
+        UPDATE orders
+        SET quantity = quantity + 1
+        WHERE id = (
+            SELECT id FROM (
+                SELECT id
+                FROM orders
+                ORDER BY RAND()
+                LIMIT 1
+            ) x
+        )
+        """)
+
+        conn.commit()
+
+        print("UPDATED one random order")
+
+        # ---------------------------------
+        # DELETE
+        # ---------------------------------
+        cursor.execute("""
+        DELETE FROM orders
+        ORDER BY id ASC
+        LIMIT 1
+        """)
+
+        conn.commit()
+
+        print("DELETED oldest order")
+
+        print("-" * 60)
+
+        # ---------------------------------
+        # Sleep
+        # ---------------------------------
+        time.sleep(5)
+
+    except Exception as e:
+        print("ERROR:", e)
+        time.sleep(5)
+
+
+hdu@mc1:~$ python mysql_runs.py
+
+---------------------------------------
+
+Updated kibana.yml to point to crt for 2nd agent
+Update ES with 0.0.0.0 instead of localhost
+Updated Agent settings for mc1
+
+
+
