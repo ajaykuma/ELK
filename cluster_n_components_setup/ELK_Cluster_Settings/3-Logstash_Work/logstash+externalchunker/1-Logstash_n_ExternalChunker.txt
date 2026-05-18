@@ -1,0 +1,851 @@
+Logstash n external chunker script
+==================================
+Structured Data:
+Lab reports (pdf_chunked_pipeline.conf + pdf_chunker.py)
+
+Structured section splitting on known headers (CBC, Thyroid, Metabolic etc.)
+Patient metadata extraction (patient_id, diagnosis, abnormal_tests)
+Index: lab-reports-chunks
+Folder: <path>/lab_reports
+
+-------------------------------------------
+Keep Logstash for discovery + routing, do the chunking in a custom Ruby script that shells out to Python, 
+then send pre-chunked events back through Logstash's http input or directly to ES. Clean separation of concerns.
+Rewrite the pipeline so Logstash handles file watching + metadata and a Python ingest pipeline script 
+(for example: our es_ingest_semantic.py) does the heavy lifting — Logstash triggers it via exec. 
+
+File discovery      Old:exec + find runs every hour, re-processes everything             New:file input with sincedb — only picks up new/changed PDFs
+Chunking            Old:Base64-encoded the whole PDF binary, sent to ES ingest pipeline  New: Python chunker extracts text, splits into N chunks, returns JSON lines
+One doc per PDF     Old:our ingest pipeline had to handle everything                     New:One ES document per chunk, fan-out via split filter
+Duplicate prevention Old: None                                                           New:SHA1 fingerprint of filename + chunk_index as document_id — re-running upserts, no duplicates
+
+So now we can
+PDF folder
+    │
+Logstash file input (sincedb watches for new PDFs)
+    │
+Ruby filter → Open3.capture3("python3 pdf_chunker.py /path/to/file.pdf")
+    │
+pdf_chunker.py writes N JSON lines to stdout (one per chunk)
+    │
+Ruby parses lines → event.set("chunks", [...])
+    │
+split filter → N separate Logstash events
+    │
+Elasticsearch (lab-reports-chunks index, one doc per chunk)
+
+# 1. Place the chunker script where the pipeline expects it
+cp pdf_chunker.py /home/hdu/logstash/scripts/pdf_chunker.py
+chmod +x /home/hdu/logstash/scripts/pdf_chunker.py
+
+# 2. Install Python deps (only pdfplumber needed if EMBED = False)
+pip install pdfplumber --break-system-packages
+
+# 3. Test the chunker standalone first — should print JSON lines
+python3 /home/hdu/logstash/scripts/pdf_chunker.py /home/hdu/datasets/pdfs/P001_Aarav_Ferreira_lab_report.pdf
+
+# 4. Run Logstash
+bin/logstash -f pdf_chunked_pipeline.conf
+
+Two modes in pdf_chunker.py — change MODE at the top:
+
+"structured" — uses your existing section header logic (CBC, Thyroid, Metabolic etc.) — best for your lab reports
+"fixed" — 1000-char overlapping windows with 200-char overlap — use this for the BI_approaches.pdf style generic PDFs you had earlier
+
+To enable embeddings later, just flip EMBED = True in pdf_chunker.py and make sure the ES index mapping 
+has the dense_vector field (copy from es_ingest_semantic.py).
+
+Testing:
+On windows
+E:\logstash-8.18.7\bin>logstash --path.settings E:\\logstash-8.18.7 -f E:\\logstash-8.18.7\\conf.d\\logstash_simple.conf
+
+DELETE /lab-reports-chunks
+
+PUT /lab-reports-chunks
+{
+  "settings": {
+    "number_of_shards":    3,
+    "number_of_replicas":  1,
+    "auto_expand_replicas": false
+  },
+  "mappings": {
+    "properties": {
+
+      // Patient metadata - keyword for exact match + aggregations
+      "patient_id":    { "type": "keyword" },
+      "patient_name":  { "type": "text",    "fields": { "keyword": { "type": "keyword" } } },
+      "gender":        { "type": "keyword" },
+      "dob":           { "type": "keyword" },
+      "doctor":        { "type": "text",    "fields": { "keyword": { "type": "keyword" } } },
+      "specialty":     { "type": "keyword" },
+      "report_date":   { "type": "keyword" },
+      "sample_date":   { "type": "keyword" },
+      "diagnosis":     { "type": "text",    "fields": { "keyword": { "type": "keyword" } } },
+
+      // Chunk fields
+      "section":       { "type": "keyword" },
+      "chunk_text":    { "type": "text" },
+      "chunk_index":   { "type": "integer" },
+      "source_file":   { "type": "keyword" },
+
+      // Abnormal tests - keyword array for term aggregations
+      "abnormal_tests": { "type": "keyword" },
+      "abnormal_count": { "type": "integer" },
+
+      // Pipeline metadata
+      "parse_error":   { "type": "keyword" },
+      "ingested_at":   { "type": "date" }
+    }
+  }
+}
+
+GET lab-reports-chunks/_count
+
+GET lab-reports-chunks/_search
+{
+  "query": {
+    "match_all": {}
+  }
+
+}
+
+GET lab-reports-chunks/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_patient":  { "terms": { "field": "patient_id",    "size": 10 } },
+    "by_section":  { "terms": { "field": "section",       "size": 20 } },
+    "by_abnormal": { "terms": { "field": "abnormal_tests","size": 20 } },
+    "by_specialty":{ "terms": { "field": "specialty",     "size": 10 } }
+  }
+}
+
+Shows
+---------
+by_patient — all 5 patients present, chunk counts make sense:
+
+P001 and P003 have 6 chunks each — they have an extra section (Diabetes & Renal and Iron Studies respectively)
+P002, P004, P005 have 5 chunks each — standard sections only
+
+by_section — exactly 5 of each core section (one per patient), plus 1 Diabetes & Renal (P001) and 1 Iron Studies (P003). 
+Note** — not every patient has every extra section.
+by_specialty — 4 specialties across 5 patients:
+
+Endocrinologist: 11 chunks — P001 (6) + P002 (5) both are Endocrinologist patients
+Hematologist: 6 — P003
+Gastroenterologist: 5 — P004
+Nephrologist: 5 — P005
+
+by_abnormal — realistic distribution. Hemoglobin flagged in 4 patients (anaemia is common across conditions), 
+Cholesterol and Glucose in 2 each, condition-specific tests like Ferritin, Anti-TPO, BUN appearing once each.
+
+----------
+Scaling up:
+Now we can scale up — drop the sincedb NUL, point to all 50 PDFs, create the index with mapping first, and run Logstash once
+----------
+GET lab-reports-chunks/_search
+{
+  "query": {
+    "match": { "diagnosis": "Type 2 Diabetes" }
+  }
+
+}
+
+Shows >
+----------
+All 6 chunks for P001 returned with embeddings stored, correct sections, abnormal tests detected, diagnosis parsed correctly.
+----------
+
+#terms : fieldname -> array of values
+GET lab-reports-chunks/_search
+{
+  "query": {
+    "terms": { "diagnosis.keyword": ["Type 2 Diabetes follow-up.", "Hypothyroidism follow-up."] }
+  }
+}
+
+
+# Exact match on one value (term, singular)
+GET lab-reports-chunks/_search
+{
+  "query": { "term": { "patient_id": "P001" } }
+}
+
+# Exact match on multiple values (terms, plural)
+GET lab-reports-chunks/_search
+{
+  "query": { "terms": { "patient_id": ["P001", "P002", "P003"] } }
+}
+
+# Full-text search (match - analysed)
+GET lab-reports-chunks/_search
+{
+  "query": { "match": { "diagnosis": "Type 2 Diabetes" } }
+}
+
+# Exact match on keyword field
+GET lab-reports-chunks/_search
+{
+  "query": { "term": { "specialty": "Endocrinologist" } }
+}
+
+# Aggregation on keyword field
+GET lab-reports-chunks/_search
+{
+  "size": 0,
+  "aggs": { "by_diagnosis": { "terms": { "field": "diagnosis.keyword", "size": 10 } } }
+}
+
+
+--------------------------------------------------
+Unstructured data:
+Academic papers (academic_pdf_pipeline.conf + academic_pdf_chunker.py)
+
+Two-column detection via bounding-box extraction (fixes Walmart paper)
+Duplicate page deduplication by MD5 hash (fixes IoT paper double abstract)
+Junk page filtering (ResearchGate cover, pure reference pages)
+
+Academic section regex — handles numbered (1.), sub-numbered (3.1), and roman numeral (IV.) headers
+Long sections auto-sub-chunked with 200-char overlap
+Paper-level metadata: doc_title, doc_year, doc_venue, doc_type
+Index: academic-papers-chunks
+Folder: <path>/academic_pdfs/
+
+Edited: notepad E:\logstash-8.18.7\config\logstash.yml
+pipeline.workers: 1
+With pipeline.workers: 1 in logstash.yml and the global dedup hash in the Ruby init block, each PDF will be processed exactly once. 
+The $processed_pdfs hash remembers every path it has seen and cancels duplicate events before Python is ever called.
+
+# 1. Create the folder and drop your 3 PDFs in it
+mkdir -p /home/hdu/datasets/academic_pdfs
+cp BI_approaches.pdf Time-Series*.pdf Walmarts*.pdf /home/hdu/datasets/academic_pdfs/
+
+# 2. Place the chunker script
+cp academic_pdf_chunker.py /home/hdu/logstash/scripts/
+
+# 3. Test the chunker on one PDF first — should print JSON lines
+python3 /home/hdu/logstash/scripts/academic_pdf_chunker.py \
+  "/home/hdu/datasets/academic_pdfs/Walmarts_sales_data_analysis.pdf"
+
+# 4. Run the pipeline
+bin/logstash -f academic_pdf_pipeline.conf
+
+=====================================
+Summarizing:
+Pure Python (es_ingest_semantic.py)
+✓ Full control over every chunking decision — you wrote the logic, you debug it in Python
+✓ sentence-transformers, pdfplumber, spaCy — any library, no JVM restrictions
+✓ Easy to test:
+python script.py --search "query"
+— immediate feedback
+✓ Embeddings computed inline — no shell-out overhead, model loaded once
+Single file to maintain, no YAML + Ruby + Python split across 3 files
+✓ Error tracebacks are Python — readable, stack-traceable
+✗ No built-in file watching — you run it manually or schedule via cron
+✗ No automatic retry on ES failure — you'd add that yourself
+✗ Not part of a broader ELK observability stack if you're using one
+
+Logstash + Python chunker
+✓ sincedb tracks processed files — new PDFs auto-ingested without re-running anything
+✓ Built-in retry, dead letter queue, back-pressure handling
+✓ Fits naturally into existing ELK stack — Kibana can monitor pipeline health
+✓ Can fan out to multiple outputs (ES + S3 + Kafka) in one config
+✗ Ruby filter calls Python via Open3 shell-out — each PDF spawns a new process
+Embedding model reloads per PDF (unless you run a persistent embedding server)
+✗ Debugging across Ruby + Python + YAML is painful — errors in 3 different places
+✗ Logstash uses ~500MB RAM just to run, even for a tiny pipeline
+✗ JVM startup adds 10–20s lag before any processing begins
+
+The hidden cost: model reloading
+With Logstash, every PDF triggers Open3.capture3("python3 chunker.py file.pdf"). 
+Python starts fresh, imports pdfplumber, imports sentence-transformers, loads the 80MB model weights from disk, processes the file, exits. 
+For 3 PDFs that's 3 cold starts. 
+For 50 lab report PDFs that's 50 cold starts — easily 3–5 minutes of model loading vs 30 seconds if the model is loaded once in Python.
+
+Complexity comparison
+Files you need to maintain:
+> es_ingest_semantic.py
+
+Logstash approach
+academic_pdf_pipeline.conf (Logstash DSL)
+academic_pdf_chunker.py (Python)
+sincedb file (auto-created)
+completed log file (auto-created)
+Total: 4 files, 2 languages
+
+The one genuine reason to keep Logstash in setup is if we already have it running for something else 
+(application logs, system metrics etc.) and want a single place to manage all pipelines. 
+If we're running Logstash purely for PDF ingestion, it's adding JVM overhead, 500MB RAM, 
+and a two-language debugging problem for no real gain over Python.
+
+Suggestion:
+Add watchdog (pip install watchdog) if needed- auto-pickup of new files — 10 lines which then replaces the entire Logstash pipeline.
+
+--------------------------------------------------------------------------------------
+Note**
+Flip EMBED=True (to store 384 dimensions vectors) for any case before ingestion.
+
+Querying:
+For academic_docs>
+
+##Semantic
+1.How do companies make faster decisions using data?
+BI paper
+None of these words appear verbatim. The embedding maps "faster decisions using data" → chunks about 
+"just-in-time information", "competitive advantage", "optimal decision making" in the BI paper.
+
+CLI:
+python academic_pdf_chunker.py --semantic \
+  "How do companies make faster decisions using data"
+
+For example: E:\logstash+externalchunker>python academic_pdf_chunker.py "E:\logstash+externalchunker\academic_pdfs\Walmarts-sales-data-analysis.pdf" --semantic "How do companies make faster decisions using data"
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "knn": {
+    "field":          "embedding",
+    "query_vector":   "<embed the query string first>",
+    "k":              5,
+    "num_candidates": 50
+  },
+  "_source": ["doc_title", "section", "chunk_text", "doc_year"]
+}
+
+Python:
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+query = "How do companies make faster decisions using data"
+vec   = model.encode(query).tolist()
+
+resp = es.search(index="academic-papers-chunks", body={
+    "knn": {
+        "field": "embedding", "query_vector": vec,
+        "k": 5, "num_candidates": 50
+    },
+    "_source": ["doc_title", "section", "chunk_text"]
+})
+for h in resp["hits"]["hits"]:
+    print(h["_score"], h["_source"]["section"], h["_source"]["chunk_text"][:120])
+
+Expects: BI paper — Introduction, Conclusions, "managerial approach" sections
+
+2.Measuring air pollution with cheap hardware and sending data wirelessly
+IoT paper
+"Cheap hardware" → MQ-135, Arduino-Uno, DHT-22. "Sending data wirelessly" → Firebase, IoT arrangement, sensor nodes. No verbatim overlap.
+
+CLI:
+python academic_pdf_chunker.py --semantic \
+  "measuring air pollution with cheap hardware and sending data wirelessly"
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "knn": {
+    "field": "embedding",
+    "query_vector": "<embed query>",
+    "k": 5, "num_candidates": 50,
+    "filter": {
+      "term": { "source_file": "Time-Series-Data-Prediction-using-IoT..." }
+    }
+  }
+}
+
+Python:
+vec = model.encode(
+    "measuring air pollution with cheap hardware and sending data wirelessly"
+).tolist()
+
+resp = es.search(index="academic-papers-chunks", body={
+    "knn": { "field": "embedding", "query_vector": vec,
+              "k": 5, "num_candidates": 50 }
+})
+
+Expects: IoT paper — "2.1 Components of IoT Arrangement", "2. Dataset Collection"
+
+3.How do seasonal events and weather affect how much people shop?
+Walmart paper
+"Seasonal events" → holidays, quarterly patterns. "How much people shop" → weekly sales, consumer behaviour. 
+Classic paraphrase — none of these terms are in the paper.
+
+CLI:
+python academic_pdf_chunker.py --semantic \
+  "how do seasonal events and weather affect how much people shop"
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "knn": {
+    "field": "embedding", "query_vector": "<embed query>",
+    "k": 5, "num_candidates": 50
+  }
+}
+
+Python:
+vec = model.encode(
+    "how do seasonal events and weather affect how much people shop"
+).tolist()
+resp = es.search(index="academic-papers-chunks", body={
+    "knn": { "field": "embedding", "query_vector": vec,
+              "k": 5, "num_candidates": 50 }
+})
+
+Expects: Walmart paper — "V. Results and Discussion", temperature/fuel tables
+
+4.Cross-paper: tools that help organisations understand their own data
+Semantic
+All 3 papers
+Should surface chunks from all three papers — BI paper (data warehousing, dashboards), IoT paper (sensor analytics),
+ Walmart paper (Spark analytics). A good test that cross-paper semantic retrieval works.
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "knn": {
+    "field": "embedding", "query_vector": "<embed query>",
+    "k": 10, "num_candidates": 100
+  },
+  "aggs": {
+    "by_paper": { "terms": { "field": "source_file", "size": 5 } }
+  }
+}
+
+Python:
+vec = model.encode(
+    "tools that help organisations understand their own data"
+).tolist()
+resp = es.search(index="academic-papers-chunks", body={
+    "knn": { "field": "embedding", "query_vector": vec,
+              "k": 10, "num_candidates": 100 }
+})
+# Check how many distinct source_files are represented
+papers = set(h["_source"]["source_file"] for h in resp["hits"]["hits"])
+print(f"Hit {len(papers)} distinct papers")
+
+Expects: chunks from all 3 papers — BI "Technical approach", IoT "Dataset Collection", Walmart "Technology Implementation"
+
+------------------------------------------------------------------------------
+##BM25
+#Exact keyword matches — use when you know the precise term
+1. OLAP data warehouse decision support
+BI paper
+
+All three terms appear verbatim in Table 1 of the BI paper. BM25 will score these chunks very highly. 
+Semantic would also work but adds no advantage for exact technical acronyms.
+
+CLI:
+python es_ingest_semantic.py --search "OLAP data warehouse decision support"
+
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "multi_match": {
+      "query":     "OLAP data warehouse decision support",
+      "fields":    ["chunk_text^2", "doc_title", "section"],
+      "type":      "best_fields",
+      "fuzziness": "AUTO"
+    }
+  },
+  "highlight": {
+    "fields": { "chunk_text": { "fragment_size": 200 } }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "query": {
+        "multi_match": {
+            "query":     "OLAP data warehouse decision support",
+            "fields":    ["chunk_text^2", "doc_title", "section"],
+            "fuzziness": "AUTO"
+        }
+    },
+    "highlight": { "fields": { "chunk_text": {} } }
+})
+
+Expects: BI paper Table 1 rows 10, 13, 37 — "data-driven DSS", "data warehouse", "OLAP tool"
+
+2.MAE MSE RMSE MAPE performance measures
+IoT paper
+
+All four acronyms appear verbatim in section 3.3. BM25 is perfect here — semantic would score 
+"error metric" similarly to MAPE, but BM25 on exact acronyms is more precise.
+
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "match": {
+      "chunk_text": {
+        "query":    "MAE MSE RMSE MAPE performance measures",
+        "operator": "or"
+      }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "query": { "match": {
+        "chunk_text": { "query": "MAE MSE RMSE MAPE", "operator": "or" }
+    }}
+})
+
+Expects: IoT paper — "3.3 Performance Measures", "4. Result Representation" (Table 2 & 3)
+
+3.Apache Spark MapReduce Hadoop batch processing
+Walmart paper
+
+Technology names — exact matches. "Spark", "MapReduce", "Hadoop" all appear many times across the Walmart paper. 
+Phrase match finds chunks where all appear together.
+
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "bool": {
+      "must": { "match": { "chunk_text": "Apache Spark MapReduce Hadoop" } },
+      "filter": { "term": { "doc_type": "academic_paper" } }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "query": {
+        "bool": {
+            "must":   { "match": { "chunk_text": "Apache Spark MapReduce Hadoop" }},
+            "filter": { "term":  { "doc_type": "academic_paper" }}
+        }
+    }
+})
+
+Expects: Walmart paper — "IV. Technology Implementation", "II. Related Work", "VI. Conclusion"
+
+---------------------------------------------------------------------------------
+##Hybrid
+#Best of both — RRF merges BM25 + kNN rankings with no manual score tuning
+
+1.linear regression prediction model air quality AQI
+IoT paper
+
+"linear regression" and "AQI" are exact terms (BM25 wins). "prediction model" 
+is paraphrased — paper says "predictive analysis" (semantic closes gap). Hybrid beats both alone.
+
+CLI:
+python es_ingest_semantic.py --hybrid \
+  "linear regression prediction model air quality AQI"
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "multi_match": {
+      "query":  "linear regression prediction model air quality AQI",
+      "fields": ["chunk_text^2", "section", "doc_title"],
+      "fuzziness": "AUTO"
+    }
+  },
+  "knn": {
+    "field": "embedding", "query_vector": "<embed query>",
+    "k": 10, "num_candidates": 50
+  },
+  "rank": { "rrf": {} },
+  "highlight": { "fields": { "chunk_text": { "fragment_size": 200 } } }
+}
+
+Python:
+query = "linear regression prediction model air quality AQI"
+vec   = model.encode(query).tolist()
+
+resp = es.search(index="academic-papers-chunks", body={
+    "query": {
+        "multi_match": { "query": query,
+            "fields": ["chunk_text^2", "section"], "fuzziness": "AUTO" }
+    },
+    "knn": { "field": "embedding", "query_vector": vec,
+             "k": 10, "num_candidates": 50 },
+    "rank": { "rrf": {} }
+})
+
+Expects: IoT paper — "3.2 Prediction Model", "3.3 Performance Measures", "4. Result Representation"
+
+2. business intelligence managerial technical enabler approach classification
+BI paper
+
+"managerial", "technical", "enabler" are exact (BM25). "approach classification" 
+is paraphrased — paper says "partition" and "classified in three groups" (semantic bridges this).
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": { "multi_match": {
+    "query": "business intelligence managerial technical enabler approach",
+    "fields": ["chunk_text^2", "section"]
+  }},
+  "knn": { "field": "embedding", "query_vector": "<embed query>",
+           "k": 10, "num_candidates": 50 },
+  "rank": { "rrf": {} }
+}
+
+Python:
+query = "business intelligence managerial technical enabler approach classification"
+vec   = model.encode(query).tolist()
+
+resp = es.search(index="academic-papers-chunks", body={
+    "query": { "multi_match": {
+        "query": query, "fields": ["chunk_text^2", "section"]
+    }},
+    "knn": { "field": "embedding", "query_vector": vec,
+             "k": 10, "num_candidates": 50 },
+    "rank": { "rrf": {} }
+})
+
+Expects: BI paper — Table 2 (classification), "5. Researches Review and Analysis", "6. Conclusions"
+
+3. Spark in-memory computing vs Hadoop batch processing performance
+Walmart paper
+
+"Spark", "Hadoop", "batch processing" exact (BM25). "performance" maps to Figure 2 benchmark charts and "100 times faster" 
+claim (semantic + BM25 both fire).
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": { "multi_match": {
+    "query": "Spark Hadoop batch processing performance",
+    "fields": ["chunk_text^2", "doc_title"]
+  }},
+  "knn": { "field": "embedding", "query_vector": "<embed query>",
+           "k": 10, "num_candidates": 50 },
+  "rank": { "rrf": {} }
+}
+
+Python:
+query = "Spark in-memory computing vs Hadoop batch processing performance"
+vec   = model.encode(query).tolist()
+
+resp = es.search(index="academic-papers-chunks", body={
+    "query": { "multi_match": {
+        "query": query, "fields": ["chunk_text^2", "doc_title"]
+    }},
+    "knn": { "field": "embedding", "query_vector": vec,
+             "k": 10, "num_candidates": 50 },
+    "rank": { "rrf": {} }
+})
+
+Expects: Walmart — "IV. Technology", "II. Related Work" (Spark 100x faster claim), "III. Background"
+
+----------------------------------------------------------------------------------------
+##Aggregations
+#Analytics over the index — counts, distributions, term frequencies
+
+Chunk count per paper + avg chunk_text length
+All papers
+
+Verify ingestion — each paper should show expected chunk count. Also surfaces which sections are longest (most content-dense).
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_paper": {
+      "terms": { "field": "source_file", "size": 10 },
+      "aggs": {
+        "chunk_count": { "value_count": { "field": "chunk_index" } },
+        "text_stats":  { "string_stats": { "field": "chunk_text.keyword" } }
+      }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "size": 0,
+    "aggs": {
+        "by_paper": {
+            "terms": { "field": "source_file", "size": 10 },
+            "aggs": {
+                "chunk_count": { "value_count": { "field": "chunk_index" } }
+            }
+        }
+    }
+})
+for b in resp["aggregations"]["by_paper"]["buckets"]:
+    print(b["key"], "→", b["chunk_count"]["value"], "chunks")
+
+2. Most frequent terms per section across all papers
+All papers
+Uses significant_terms aggregation — finds terms that are statistically over-represented in each section vs 
+the rest of the index. Better than simple term counts for topic discovery.
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_section": {
+      "terms": { "field": "section", "size": 15 },
+      "aggs": {
+        "top_terms": {
+          "significant_terms": {
+            "field": "chunk_text", "size": 5
+          }
+        }
+      }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "size": 0,
+    "aggs": {
+        "by_section": {
+            "terms": { "field": "section", "size": 15 },
+            "aggs": {
+                "top_terms": {
+                    "significant_terms": { "field": "chunk_text", "size": 5 }
+                }
+            }
+        }
+    }
+})
+
+Methodology sections → "regression", "sensor", "AQI". Results sections → "MAE", "sales", "MAPE"
+
+3.Chunk count by doc_year — publication year distribution
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "size": 0,
+  "aggs": {
+    "by_year": {
+      "terms": { "field": "doc_year", "size": 10,
+                  "order": { "_key": "asc" } }
+    }
+  }
+}
+
+--------------------------------------------------------------------------------------------
+##Filter/DSL
+
+1.Search only within a specific paper
+BM25
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "bool": {
+      "must":   { "match": { "chunk_text": "machine learning prediction" } },
+      "filter": { "term":  { "source_file": "Walmarts_sales_data_analysis.pdf" } }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "query": { "bool": {
+        "must":   { "match": { "chunk_text": "machine learning prediction" }},
+        "filter": { "term":  { "source_file": "Walmarts_sales_data_analysis.pdf" }}
+    }}
+})
+
+2. Search only within a specific section type across all papers
+Hybrid
+
+Find "Conclusion" or "Results" chunks across all three papers — useful for comparing how each paper summarises its findings.
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "bool": {
+      "must": { "match": { "chunk_text": "future work limitations" } },
+      "filter": {
+        "regexp": { "section": ".*[Cc]onclusion.*|.*[Rr]esult.*" }
+      }
+    }
+  }
+}
+
+Python:
+resp = es.search(index="academic-papers-chunks", body={
+    "query": { "bool": {
+        "must":   { "match": { "chunk_text": "future work limitations" }},
+        "filter": { "regexp": { "section": ".*[Cc]onclusion.*|.*[Rr]esult.*" }}
+    }}
+})
+
+Returns Conclusion chunks from all 3 papers — compare how each wraps up findings
+
+3. More-like-this — find chunks similar to a known good chunk
+MLT
+Semantic-like
+Give ES a document ID and it finds the most similar chunks in the index using TF-IDF. No embeddings needed — useful for "find more like this section".
+
+X
+DSL:
+GET academic-papers-chunks/_search
+{
+  "query": {
+    "more_like_this": {
+      "fields": ["chunk_text"],
+      "like": [{ "_index": "academic-papers-chunks", "_id": "<chunk_doc_id>" }],
+      "min_term_freq":    1,
+      "max_query_terms":  12,
+      "min_doc_freq":     1
+    }
+  }
+}
+
+Python:
+# First get a doc ID from any search, then find similar chunks
+doc_id = resp["hits"]["hits"][0]["_id"]
+
+similar = es.search(index="academic-papers-chunks", body={
+    "query": {
+        "more_like_this": {
+            "fields": ["chunk_text"],
+            "like": [{ "_index": "academic-papers-chunks", "_id": doc_id }],
+            "min_term_freq": 1, "max_query_terms": 12
+        }
+    }
+})
+
+Great for "find other sections like this Results section" without writing a query
+
+---------------END--------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
