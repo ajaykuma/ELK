@@ -1,3 +1,223 @@
+##Fleet Server and Elastic Agents are part of the modern centralized management system for:
+
+--logs
+--metrics
+--security telemetry
+--endpoint protection
+--observability integrations
+
+They replace the older model of manually managing:
+
+--Beats (filebeat, metricbeat, etc.)
+--endpoint configs
+--scattered YAML files
+
+#architecture
+                Kibana Fleet UI
+                       |
+                       v
+                Fleet Server
+                       |
+        --------------------------------
+        |              |              |
+        v              v              v
+   Elastic Agent  Elastic Agent  Elastic Agent
+      (host1)        (host2)        (host3)
+
+Elastic Agent is a single unified agent installed on machines.
+
+It can collect:
+
+--logs
+--metrics
+--traces
+--uptime data
+--security events
+--endpoint telemetry
+
+It collects data and sends it to:
+
+--Elasticsearch
+--Logstash
+--Fleet Server (for management)
+
+It runs integrations/modules internally.
+Example:
+Elastic Agent
+ ├── system metrics
+ ├── nginx logs
+ ├── kubernetes metrics
+ ├── endpoint security
+ └── aws cloudtrail
+
+#Fleet is the centralized management layer.
+
+Fleet provides:
+
+--agent enrollment
+--policy management
+--integration management
+--configuration rollout
+--upgrades
+--monitoring
+--security policies
+
+##Fleet Server is the backend service that coordinates Elastic Agents.
+
+It acts like:
+a control plane API server
+
+Agents connect to Fleet Server to:
+--enroll
+--fetch configs
+--receive policies
+--report status
+--check for upgrades
+
+Highlevel Deployment
+1.Install Fleet Server (Central server)
+Fleet Server itself is actually:
+an Elastic Agent running in Fleet Server mode
+
+2.Create agent policy (in Kibana)
+
+3.Install Elastic Agent
+Agent:
+enrolls with Fleet Server
+receives policy
+starts integrations
+
+#Enrollment process
+
+When an agent enrolls:
+
+--admin creates enrollment token
+--agent connects to Fleet Server
+--Fleet Server validates token
+--agent gets:
+--API keys
+--policies
+--integration configs
+Then agent becomes managed centrally.
+
+#Agent policies
+
+Policies define what agents should do.
+Fleet pushes this automatically.
+
+With Fleet:
+
+edit policy once in Kibana
+all agents update automatically
+
+#Elastic Agent supervises subprocesses/components.
+Example:
+elastic-agent
+ ├── filebeat component
+ ├── metricbeat component
+ ├── endpoint-security component
+ └── osquery manager
+
+Data Path:
+logs/metrics/security events
+        ↓
+Elastic Agent
+        ↓
+Elasticsearch
+
+Management flow:
+Elastic Agent
+      ↕
+ Fleet Server
+      ↕
+   Kibana
+
+Note**
+Fleet Server is critical
+If Fleet Server goes down:
+--existing agents still collect/send data
+--BUT policy changes/upgrades stop
+
+Elasticsearch is still the data backend
+--Fleet does not replace Elasticsearch.
+--It only manages agents.
+
+#Integration
+The integration:
+
+generates configs automatically
+sets up parsing pipelines
+creates dashboards
+defines index/data stream mappings
+handles ingestion
+
+High level flow:
+Application logs
+       ↓
+Elastic Agent
+       ↓
+Integration input/parser
+       ↓
+Elasticsearch data stream
+       ↓
+Kibana dashboards/search
+
+Viewing data collected:
+In Kibana:
+Observability → Logs
+
+or Discover
+   --data views
+   --data streams
+
+data streams look like:
+logs-nginx.access-default
+logs-system.syslog-default
+
+#System integration example
+Very common first integration.
+
+Collects:
+
+--syslog
+--auth logs
+--CPU
+--memory
+--filesystem
+--processes
+
+#Ingest pipelines
+
+Integrations often automatically install ingest pipelines.
+
+Pipeline functions:
+
+--grok parsing
+--JSON parsing
+--geoip enrichment
+--user-agent parsing
+--field normalization
+
+##Common troubleshooting
+Agent healthy but no logs
+
+Check:
+file permissions
+correct paths
+log rotation
+integration assigned to correct policy
+
+Typical Production setup:
+Servers/Containers
+        ↓
+Elastic Agent
+        ↓
+Fleet-managed integrations
+        ↓
+Elasticsearch data streams
+        ↓
+Kibana dashboards/search/alerts
+
 ##working with Fleet server and agents
 --------------------------------
 Add fleet server: https://10.156.0.4:8220
@@ -10,16 +230,41 @@ cd elastic-agent-8.19.0-linux-x86_64
 
 Options:
 sudo ./elastic-agent install \
-  --fleet-server-es=https://127.0.0.1:9200 \
-  --fleet-server-service-token=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3NzkxMjA2MjY2ODE6S21TVk9GUl9USFNJc3p6Y0twNDZFZw \
+  --fleet-server-es=https://your-es-host:9200 \
+  --fleet-server-service-token=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3NzkxMTg1NjgwNjY6emdKWDk5anBTbE9uX2VoNlJONnNBQQ \
   --fleet-server-policy=fleet-server-policy \
-  --fleet-server-es-ca-trusted-fingerprint=2b154f34ec9f233eab35c7d698e69a0b11771b50f0c6d7364e119b1573a790ca \
-  --fleet-server-port=8220
-  --certificate-authorities=/home/hdu/elasticsearch/config/certs/http_ca.crt 
+  --fleet-server-port=8220 \
+  --certificate-authorities=/path/to/http_ca.crt
 
 <optionally>
 --fleet-server-cert=/path/fleet-server.crt
 --fleet-server-cert-key=/path/fleet-server.key
+
+--certificate-authorities
+Points to the CA cert generated by Elasticsearch
+Usually http_ca.crt
+--fleet-server-service-token
+Authenticates Fleet Server to Elasticsearch securely
+
+Note**
+the CA certificate you pass there is the CA that signed the Elasticsearch HTTP certificate.
+The filename itself does not matter.
+These are all equivalent if they contain the correct CA:
+
+/etc/elastic-agent/certs/http_ca.crt
+/etc/elasticsearch/certs/http_ca.crt
+
+What matters is:
+--The file contains the CA certificate
+--That CA signed Elasticsearch's HTTPS certificate
+--Elastic Agent can read the file
+
+so if we use,--certificate-authorities=/etc/elastic-agent/certs/http_ca.crt
+does NOT mean:
+"use Elastic Agent CA"
+It means:
+"trust this CA when connecting to Elasticsearch"
+
 
 OR
 sudo ./elastic-agent install \
@@ -28,6 +273,21 @@ sudo ./elastic-agent install \
   --fleet-server-policy=fleet-server-policy \
   --fleet-server-port=8220 \
   --insecure
+
+Internally:
+Elastic Agent/Fleet Server
+        |
+        | HTTPS
+        v
+Elasticsearch
+
+So
+During TLS handshake:
+
+Elasticsearch presents its certificate
+Elastic Agent checks:
+"Was this cert signed by a trusted CA?"
+The CA file from: --certificate-authorities is used for validation
 
 --We use
 hdu@elk2:~/elastic-agent-8.19.0-linux-x86_64$ sudo ./elastic-agent install \
@@ -83,6 +343,9 @@ May 18 16:20:09 elk2 elastic-agent[14628]: {"log.level":"info","@timestamp":"202
 Fleet Server connected
 You can now continue enrolling agents with Fleet.
 
+--check
+sudo ss -tulpn | grep 8220
+
 <click on continue enrolling>
 
 Add agent
@@ -136,6 +399,58 @@ and then GET _ingest/pipeline/.fleet_final_pipeline-1
 or from Fleet Server Policy.
 
 ============================================
+Planned Setup:
+M1 (elk2)
+ ├── Elasticsearch
+ ├── Fleet Server
+ └── Kibana
+
+M2 (mc1)
+ └── Elastic Agent (collecting MySQL logs)
+
+So
+on machine1 (already done)
+sudo ./elastic-agent install \
+  --fleet-server-es=https://M1:9200 \
+  --fleet-server-service-token=TOKEN \
+  --fleet-server-policy=fleet-server-policy \
+  --fleet-server-port=8220 \
+  --fleet-server-es-ca-trusted-fingerprint=FINGERPRINT
+
+on machine2
+sudo ./elastic-agent install \
+  --url=https://M1_EXTERNAL_IP:8220 \
+  --enrollment-token=ENROLLMENT_TOKEN \
+  --insecure
+
+or better:
+sudo ./elastic-agent install \
+  --url=https://M1_EXTERNAL_IP:8220 \
+  --enrollment-token=ENROLLMENT_TOKEN \
+  --certificate-authorities=/etc/elastic-agent/fleet-ca.crt
+
+Note** --fleet-server-es
+Used ONLY when installing a Fleet Server.
+Fleet Server needs Elasticsearch because it:
+
+stores agent states
+stores policies
+stores logs/metrics
+communicates with Fleet indices
+manages enrollments
+
+when agent setup, we use --url>Agent, connect to Fleet Server here
+
+M2 Elastic Agent
+       |
+       | HTTPS 8220
+       v
+Fleet Server on M1
+       |
+       v
+Elasticsearch on M1
+
+================================================================================
 on elk2 machine:
 
 Mysql:
@@ -150,6 +465,11 @@ Mysql:
 > mysql> ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Summer12@winter';
 
 > mysql> flush privileges;
+
+Also might be needed:
+ls -l /var/log/mysql
+sudo usermod -aG mysql elastic-agent
+sudo usermod -aG adm elastic-agent
 
 Then enable logs in Mysql:
 
@@ -472,6 +792,102 @@ hdu@mc1:~$ python mysql_runs.py
 Updated kibana.yml to point to crt for 2nd agent
 Update ES with 0.0.0.0 instead of localhost
 Updated Agent settings for mc1
+
+-----------------Important commands needed-----------------
+--Verify Indices/Data Streams
+curl -X GET localhost:9200/_data_stream?pretty
+--Verify Documents
+curl -X GET "localhost:9200/logs-*/_search?pretty"
+curl -X GET "localhost:9200/logs-elastic_agent.metricbeat-default/_search?pretty"
+
+curl -X GET "localhost:9200/logs-*/_search?pretty" \
+-H 'Content-Type: application/json' \
+-d '
+{
+  "size": 5,
+  "_source": ["@timestamp","message","agent","host"],
+  "query": {
+    "match_all": {}
+  }
+}'
+
+curl -X GET "localhost:9200/metrics-*/_search?pretty"
+--Query specific dataset
+curl -X GET \
+"localhost:9200/metrics-elastic_agent.metricbeat-default/_search?pretty"
+--check document count
+curl -X GET "localhost:9200/_cat/count/logs-*?v"
+--see mappings
+curl -X GET \
+"localhost:9200/logs-elastic_agent.metricbeat-default/_mapping?pretty"
+curl -X GET \
+"localhost:9200/metrics-system.memory-default/_search?pretty"
+--See only imp fields
+curl -X GET \
+"localhost:9200/metrics-system.cpu-default/_search?pretty" \
+-H 'Content-Type: application/json' \
+-d '
+{
+  "size": 3,
+  "_source": [
+    "@timestamp",
+    "host.hostname",
+    "system.cpu.total.pct"
+  ]
+}'
+
+--check latest metrics
+curl -X GET \
+"localhost:9200/metrics-system.cpu-default/_search?pretty" \
+-H 'Content-Type: application/json' \
+-d '
+{
+  "size": 1,
+  "sort": [
+    {
+      "@timestamp": "desc"
+    }
+  ]
+}'
+
+For example:
+Elasticsearch data streams being indexed by your Elastic Agent through Fleet-managed integrations.
+Data Stream	Meaning
+metrics-system.cpu-default	CPU metrics
+metrics-system.memory-default	RAM usage
+metrics-system.network-default	Network traffic
+metrics-system.fsstat-default	Filesystem stats
+metrics-system.process-default	Running processes
+metrics-system.uptime-default	Host uptime
+
+#metrics-*
+structured numeric measurements.
+Examples:
+
+CPU %
+memory %
+disk usage
+uptime
+
+#logs-*
+Application started
+Database timeout
+User login failed
+
+Managed: Fleet controls them automatically
+
+--permissions
+sudo chmod +r logfile.log
+or add agent user to group.
+
+--Show full running config
+sudo elastic-agent inspect output -o default
+--see current inputs
+sudo elastic-agent inspect components
+--Live logs
+sudo journalctl -u elastic-agent -f
+
+-----------------Important commands ends----------------------
 
 
 
