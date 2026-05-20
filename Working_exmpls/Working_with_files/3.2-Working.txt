@@ -98,7 +98,7 @@ GET recipes/_search
 curl -s -H "Content-Type: application/json" -XPOST 'http://localhost:9200/_bulk' --data-binary @recipes.json
 
 --with security
-curl -u elastic:9_W6d34GiGU8gKoZfLlO \
+curl -u elastic:y*5xi*nmiN59JANh7NHI \
   -X POST "https://localhost:9200/recipes/_bulk" \
   -H "Content-Type: application/x-ndjson" \
   -k \
