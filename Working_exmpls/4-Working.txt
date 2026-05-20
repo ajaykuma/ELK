@@ -61,7 +61,8 @@ GET /_cat/indices/logs*?v
 
 NOte**For data streams:
 Every data stream requires a timestamp field in your document.
-By default, ES expects a field called @timestamp unless your data stream template specifies a different timestamp field in data_stream.timestamp_field.
+By default, ES expects a field called @timestamp unless your data stream template specifies a different timestamp 
+field in data_stream.timestamp_field.
 
 POST logs-2023-01/_doc
 {
@@ -115,6 +116,9 @@ ES blocks manual index creation because:
 GET _index_template/implogs
 ======================
 
+GET _cat/templates?v
+GET /_index_template
+
 --configuring multiple templates and then templates are chosen for indexes
 based on priority
 PUT _index_template/temp-01
@@ -131,8 +135,6 @@ PUT _index_template/temp-01
   }
 }
 
-GET _cat/templates?v
-GET /_index_template
 ----
 PUT _index_template/temp-02
 {
@@ -202,7 +204,7 @@ PUT _index_template/implogs2
       "my_logs": {}
     },
     "settings": {
-      "number_of_shards": 5,
+      "number_of_shards": 2,
       "number_of_replicas": 1
     },
     "mappings": {
@@ -232,6 +234,7 @@ PUT mlogs-2023-01-01
 GET mlogs-2023-01-01
 -------------
 #working with aliases
+
 --a virtual index name that can point to one or more indexes
 --actions method to specify the list of actions that we want to perform. 
 
@@ -383,4 +386,137 @@ POST /bankdata_xx/_delete_by_query?conflicts=proceed
         }
     }
 }
+
+----------
+#Working with ILM + Template + Index + Alias
+
+PUT _index_template/temp-01
+{
+  "index_patterns": [
+    "mylogss*"
+  ],
+  "priority": 0,
+  "template": {
+    "settings": {
+      "number_of_shards": 2,
+      "number_of_replicas": 2
+    }
+  }
+}
+
+GET /_index_template/temp-01
+
+PUT _index_template/temp-02
+{
+  "index_patterns": [
+    "mylogss*"
+  ],
+  "priority": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "index.lifecycle.name": "mylogspolicy",
+      "index.lifecycle.rollover_alias": "mylogs_alias"
+    }
+  }
+}
+
+PUT mylogss-00001
+{
+  "aliases": {
+    "mylogs_alias": {
+      "is_write_index": true
+    }
+  }
+}
+
+GET /_cat/indices/mylogss*?v
+
+GET mylogss-00001/_alias
+
+POST mylogs_alias/_bulk
+{"index":{"_id":"5001"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5002"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5003"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5004"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5005"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5006"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+{"index":{"_id":"5007"}}{"event_name":"SQL Connection Timeout","severity":"critical","description":"MySQL connection timeout after 30 seconds from order service","error_code":"MYSQL_504","service":"payment-service","host":"prod-app-01","environment":"production","occurrences":42,"timestamp":"2026-05-14T10:15:00","categories":[{"name":"Database"}],"tags":["mysql","timeout","sql"]}
+
+GET mylogss-00001/_count
+
+GET mylogss-00001/_ilm/explain
+
+GET mylogss-00001/_stats/docs?level=shards
+
+POST mylogss-00001/_ilm/retry
+(may still wait for poll 10 min)
+
+#lower the poll interval
+PUT _cluster/settings
+   {
+     "transient": {
+       "indices.lifecycle.poll_interval": "1m"
+     }
+   }
+
+#Restore
+PUT _cluster/settings
+{
+  "transient": {
+    "indices.lifecycle.poll_interval": null
+  }
+}
+
+#Why the Alias Matters
+#When ILM rolls over, it:
+
+Creates the new index (mylogss-000002)
+Moves the write alias (mylogs_alias) to point to the new index
+Marks the new index as is_write_index: true
+
+If you write directly to mylogss-00001, ILM can still roll it over based on the conditions being met. 
+But the real problem comes after rollover:
+
+Your next writes keep going to mylogss-00001 (now a read-only historical index)
+mylogss-00002 gets created but receives no new data
+Your subsequent rollovers (00002 → 00003) will never trigger because 00002 stays empty
+
+The Alias is the "Moving Pointer"
+Before rollover:         After rollover:
+                          
+mylogs_alias             mylogs_alias
+     │                        │
+     ▼                        ▼
+mylogss-00001  ──────►   mylogss-00002  (new writes)
+                         mylogss-00001  (frozen, searchable)
+If you bypass the alias, that pointer never moves and the whole lifecycle breaks down silently — no errors, 
+just stale data accumulating in the wrong index.
+
+#Always write to the alias, never the index directly. The alias is the only thing that keeps rollover working end-to-end.
+
+#With datastream
+
+No Alias Management Needed
+With a data stream, you never create the write alias or manage is_write_index yourself. 
+The data stream handles all of that internally. You just write to the data stream name directly
+
+PUT _data_stream/mylogss
+
+But template needs to support data stream
+
+PUT _index_template/temp-02
+{
+  "index_patterns": ["mylogss*"],
+  "priority": 1,
+  "data_stream": {},        // ←  required
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "index.lifecycle.name": "mylogspolicy"
+      // ← no rollover_alias needed here either
+    }
+  }
+}
+
 

@@ -2214,6 +2214,7 @@ To force a fresh re-read during testing → delete the filestream registry file 
 (usually under /var/lib/elastic-agent/ or /var/lib/filebeat/). That's better than relying on ignore_older.
 
 sudo ls -all /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05
+
 --elastic-agent — the running binary (552MB) — deleting this breaks your agent
 --state.enc — encrypted agent state (policy, enrollment token, etc.) — deleting this unenrolls your agent
 --components/ — Filebeat, Metricbeat and other sub-processes managed by the agent
