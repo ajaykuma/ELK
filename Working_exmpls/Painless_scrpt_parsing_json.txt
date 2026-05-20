@@ -1,0 +1,82 @@
+If your message field contains a JSON string like {"level":"error","user":"alice","status":500}:
+
+> Basic JSON Parsing with params._source
+
+
+PUT _ingest/pipeline/parse-json-message
+{
+  "processors": [
+    {
+      "json": {
+        "field": "message",
+        "target_field": "parsed"
+      }
+    }
+  ]
+}
+
+Then access fields as parsed.level, parsed.user, etc.
+
+#Painless in a Runtime Field
+PUT my-index/_mapping
+{
+  "runtime": {
+    "error_level": {
+      "type": "keyword",
+      "script": {
+        "source": """
+          def msg = params._source['message'];
+          // Extract value after "level":"
+          def pattern = /"level"\s*:\s*"([^"]+)"/;
+          // Painless doesn't support regex capture groups directly,
+          // so use indexOf approach:
+          int keyIdx = msg.indexOf('"level":"');
+          if (keyIdx != -1) {
+            int valStart = keyIdx + 9;
+            int valEnd = msg.indexOf('"', valStart);
+            if (valEnd != -1) {
+              emit(msg.substring(valStart, valEnd));
+            }
+          }
+        """
+      }
+    }
+  }
+}
+
+#Painless in a Script Field (Search Request)
+GET my-index/_search
+{
+  "script_fields": {
+    "extracted_status": {
+      "script": {
+        "lang": "painless",
+        "source": """
+          String msg = doc['message.keyword'].value;
+          int keyIdx = msg.indexOf('"status":');
+          if (keyIdx == -1) return null;
+          int valStart = keyIdx + 9;
+          // Handle numeric value (no quotes)
+          int valEnd = msg.indexOf(',', valStart);
+          if (valEnd == -1) valEnd = msg.indexOf('}', valStart);
+          return Integer.parseInt(msg.substring(valStart, valEnd).trim());
+        """
+      }
+    }
+  }
+}
+
+#Using splitOnToken / String Utilities in Painless
+// Painless script to extract multiple fields from JSON message
+Map result = new HashMap();
+String msg = params._source['message'];
+
+// Split into key-value pairs
+String[] pairs = msg.replaceAll('[{}"]', '').splitOnToken(',');
+for (String pair : pairs) {
+  String[] kv = pair.splitOnToken(':');
+  if (kv.length == 2) {
+    result[kv[0].trim()] = kv[1].trim();
+  }
+}
+return result;
