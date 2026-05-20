@@ -1919,6 +1919,62 @@ GET logs-filestream.generic-default/_search
 }
 
 -------------------------------------------------------
+Querying:
+--Find all ERROR
+GET logs-fstream.generic-default/_search
+{
+  "query": {
+    "match": {
+      "message": "ERROR"
+    }
+  }
+}
+
+--Find all Received block transfer lines
+GET logs-fstream.generic-default/_search
+{
+  "query": {
+    "match_phrase": {
+      "message": "Received BP-"
+    }
+  }
+}
+
+--filter specific IP
+GET logs-fstream.generic-default/_search
+{
+  "query": {
+    "match_phrase": {
+      "message": "192.168.56.101"
+    }
+  }
+}
+
+--combine filters, errors from specifc class
+GET logs-fstream.generic-default/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "message": "ERROR" }},
+        { "match_phrase": { "message": "DataNode" }}
+      ]
+    }
+  }
+}
+
+--regex on msg field
+GET logs-fstream.generic-default/_search
+{
+  "query": {
+    "regexp": {
+      "message": ".*blk_[0-9]+.*"
+    }
+  }
+}
+
+
+-----------------------
 Options:
 If we delete index or stream
 but the integration still exists, then
@@ -1947,7 +2003,7 @@ Add integration> fstream2
 chmod -R syslog:adm /var/log/jhadoop*
 log path: /var/log/jhadoop*
 
-So we can >Fleet → Agent Policy → Filestream Integration → Advanced Options
+So we can >Fleet → Agent Policy → Filestream Integration → Advanced Options (if grok supported)
 Add>
 - grok:
     field: message
@@ -1960,9 +2016,277 @@ or using ECS compatible:
     patterns:
       - '%{TIMESTAMP_ISO8601:hadoop.timestamp} %{LOGLEVEL:log.level} %{JAVACLASS:process.name}: Received %{DATA:hdfs.block} src: /%{IP:source.ip}:%{NUMBER:source.port} dest: /%{IP:destination.ip}:%{NUMBER:destination.port} of size %{NUMBER:file.size}'
 
+or add ingest pipeline
+PUT _ingest/pipeline/jhadoop-datanode-pipeline
+{
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": ["%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME},%{INT} %{LOGLEVEL:log.level} %{JAVACLASS:process.name}: Received %{NOTSPACE:hdfs.block} src: /%{IP:source.ip}:%{NUMBER:source.port} dest: /%{IP:destination.ip}:%{NUMBER:destination.port} of size %{NUMBER:file.size}"],
+        "ignore_failure": true
+      }
+    }
+  ]
+}
+
+--check
+GET logs-fstream2.generic-default/_search
+{
+  "size": 3,
+  "_source": ["message","@timestamp","data_stream.dataset","log.file.path"]
+}
+
+---check
+GET logs-fstream2.generic-default/_search
+{
+  "size": 50,
+  "_source": ["message"]
+}
+
+--output--{
+  "took": 1,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 10000,
+      "relation": "gte"
+    },
+    "max_score": 1,
+    "hits": [
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "m5NORJ4B5F0aY4un2NwJ",
+        "_score": 1,
+        "_source": {
+          "message": """	at org.apache.hadoop.net.NetUtils.wrapWithMessage(NetUtils.java:791)"""
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "nJNORJ4B5F0aY4un2NwJ",
+        "_score": 1,
+        "_source": {
+          "message": """	at org.apache.hadoop.net.NetUtils.wrapException(NetUtils.java:757)"""
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "nZNORJ4B5F0aY4un2NwJ",
+        "_score": 1,
+        "_source": {
+          "message": """	at org.apache.hadoop.ipc.Client.call(Client.java:1474)"""
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "npNORJ4B5F0aY4un2NwJ",
+        "_score": 1,
+        "_source": {
+          "message": """	at org.apache.hadoop.ipc.Client.call(Client.java:1401)"""
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "n5NORJ4B5F0aY4un2NwJ",
+        "_score": 1,
+        "_source": {
+          "message": """	at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:232)"""
+        }
+      }
+    ]
+  }
+}
+
+--update ingest pipeline
+PUT _ingest/pipeline/jhadoop-datanode-pipeline
+{
+  "description": "Parse Hadoop log lines",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME},%{INT} %{LOGLEVEL:log.level} %{JAVACLASS:process.name}: Received %{NOTSPACE:hdfs.block} src: /%{IP:source.ip}:%{NUMBER:source.port} dest: /%{IP:destination.ip}:%{NUMBER:destination.port} of size %{NUMBER:file.size}",
+          "%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME},%{INT} %{LOGLEVEL:log.level} %{JAVACLASS:process.name}: %{GREEDYDATA:hadoop.message}",
+          "%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME},%{INT} %{LOGLEVEL:log.level} %{GREEDYDATA:hadoop.message}"
+        ],
+        "ignore_failure": true
+      }
+    }
+  ]
+}
+
+and updated parsers section in fleet
+multiline.type: pattern
+multiline.pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+multiline.negate: true
+multiline.match: after
+multiline.max_lines: 500
+
 If issues:
 sudo systemctl stop elastic-agent
 sudo rm -rf /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/filestream-default/registry/
 sudo systemctl start elastic-agent
+
+now output shows:
+{
+  "took": 98,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 10000,
+      "relation": "gte"
+    },
+    "max_score": 1,
+    "hits": [
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "opNoRJ4B5F0aY4unOuoa",
+        "_score": 1,
+        "_source": {
+          "message": "2019-08-01 22:08:13,017 INFO org.apache.hadoop.hdfs.server.namenode.NNStorageRetentionManager: Purging old image FSImageFile(file=/tmp/hadoop-hdu/dfs/namesecondary/current/fsimage_0000000000000000074, cpktTxId=0000000000000000074)"
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "o5NoRJ4B5F0aY4unOuoa",
+        "_score": 1,
+        "_source": {
+          "message": "2019-08-01 22:08:13,029 INFO org.apache.hadoop.hdfs.server.namenode.TransferFsImage: Uploaded image with txid 579 to namenode at http://um1:50070 in 0.01 seconds"
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "pJNoRJ4B5F0aY4unOuoa",
+        "_score": 1,
+        "_source": {
+          "message": "2019-08-01 22:08:13,029 WARN org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode: Checkpoint done. New Image Size: 6776"
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "pZNoRJ4B5F0aY4unOuoa",
+        "_score": 1,
+        "_source": {
+          "message": "2019-08-02 08:18:33,431 INFO org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode: STARTUP_MSG: "
+        }
+      },
+      {
+        "_index": ".ds-logs-fstream2.generic-default-2026.05.20-000001",
+        "_id": "ppNoRJ4B5F0aY4unOuoa",
+        "_score": 1,
+        "_source": {
+          "message": "/************************************************************"
+        }
+      }
+    ]
+  }
+}
+
+--------------------other commands------------------
+Beyond the grok pattern itself, the most common reasons a filestream produces no data are:
+
+--filestream.id missing or duplicated — every filestream input needs a unique id: field, otherwise it's silently ignored.
+--paths not matching — verify the path glob actually hits your log file. Run ls on the pattern to confirm.
+--dataset not set — under parsers or at the stream level, set dataset: hadoop.datanode (or similar) so Elasticsearch has a destination index.
+--File already read — Filebeat/Agent tracks offsets. If the file was registered before, it won't re-read from the start. Delete the registry 
+  or set ignore_older to force a fresh read.
+--Grok failure drops the event — if grok doesn't match, the event is dropped by default. Add ignore_failure: false and check 
+  agent logs for parse errors.
+
+Note**ignore_older tells the filestream input to ignore files whose modification time is older than the specified duration. So if your log file 
+hasn't been written to in the last 5 minutes, it will be skipped entirely — no events collected at all.
+
+To force a fresh re-read during testing → delete the filestream registry file instead 
+(usually under /var/lib/elastic-agent/ or /var/lib/filebeat/). That's better than relying on ignore_older.
+
+sudo ls -all /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05
+--elastic-agent — the running binary (552MB) — deleting this breaks your agent
+--state.enc — encrypted agent state (policy, enrollment token, etc.) — deleting this unenrolls your agent
+--components/ — Filebeat, Metricbeat and other sub-processes managed by the agent
+--run/ — PIDs and runtime sockets
+--logs/ — agent logs
+
+The filestream registry (offset tracking) is what we actually want to clear to force a re-read. It lives separately:
+sudo ls -all /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/
+or
+sudo find /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run -name "log.json" 2>/dev/null
+
+That log.json is the actual offset registry. To reset it:
+
+Stop the agent first: sudo systemctl stop elastic-agent
+Delete or truncate the registry file
+Start it again: sudo systemctl start elastic-agent
+
+sudo ls -all /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/filestream-default/registry/
+
+sudo systemctl stop elastic-agent
+sudo rm -rf /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/filestream-default/registry/
+sudo systemctl start elastic-agent
+
+After restarting:
+sudo tail -f /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/logs/elastic-agent-*.ndjson | grep -i filestream
+
+Note**
+Filebeat/filestream tracks files by inode + device number, not by filename. So when we renamed hadoop* → jhadoop*:
+
+If our paths: glob in the filestream config no longer matches jhadoop*, Filebeat won't read it at all — regardless of inode
+If our paths: glob does match jhadoop*, Filebeat sees it as the same file (same inode) and won't re-read already-consumed offsets — 
+it picks up from where it left off.
+
+--verify the file is actually being harvested
+sudo cat /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/filestream-default/registry/filebeat/log.json
+
+Note**If the inode entry for your jhadoop* file appears there — the file is being read. If it's empty or missing — the path glob still isn't matching.
+
+--check what the agent actually received as its config:
+sudo cat /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/filestream-default/meta.json
+
+--check the filebeat component config that the agent generated:
+sudo find /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components -name "*.yml" | xargs grep -l "path\|jhadoop\|hadoop" 2>/dev/null
+
+If no entries:
+check the filebeat component config that the agent generated:
+
+--what's actually in components beyond lenses
+sudo find /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/components -type f -not -path "*/lenses/*" | head -20
+
+--check the run/ directory for what processes are actually running
+sudo find /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run -type f | head -20
+
+Note**
+1. There's an agentbeat binary — not a separate Filebeat. In 8.x, Elastic Agent ships a unified agentbeat that handles all beat functionality including filestream. That's fine and expected.
+2. There's a log-default directory in run/ alongside filestream-default. 
+
+--check in registry
+sudo cat /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/log-default/registry/filebeat/log.json
+
+--check what config is rendered
+sudo cat /opt/Elastic/Agent/data/elastic-agent-8.19.0-58cc05/run/log-default/meta.json
+
+--if Fingerprint scanning is enabled but file may be too small
+prospector.scanner.fingerprint.enabled: true
+prospector.scanner.fingerprint.offset: 0
+prospector.scanner.fingerprint.length: 1024
+
+Fingerprint mode requires the file to be at least 1024 bytes before Filebeat will start reading it. If your log file is smaller than that it gets silently ignored. 
+
+
+
+
+
 
 
